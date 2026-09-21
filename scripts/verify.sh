@@ -164,14 +164,15 @@ source "$nvim_source_profile"
 nvim_source_root="$HOME/.local/share/fedora-desktop/sources/nvim"
 nvim_config_dir=$(readlink -m -- "$nvim_source_root/$NVIM_CONFIG_SUBDIR")
 if [[ -L $HOME/.config/nvim && $(readlink -f -- "$HOME/.config/nvim") == "$nvim_config_dir" ]]; then
-  pass "Neovim config link points at the pinned external checkout"
+  pass "Neovim config link points at the external checkout"
 else
   fail "Neovim config link is missing or points at the wrong checkout"
 fi
-if [[ -d "$nvim_source_root/.git" && $(git -C "$nvim_source_root" rev-parse HEAD 2>/dev/null) == "$NVIM_CONFIG_REF" ]]; then
-  pass "Neovim config checkout is pinned to $NVIM_CONFIG_REF"
+expected_nvim_ref=$(git -C "$nvim_source_root" rev-parse "origin/$NVIM_CONFIG_REF^{commit}" 2>/dev/null || git -C "$nvim_source_root" rev-parse FETCH_HEAD 2>/dev/null || true)
+if [[ -d "$nvim_source_root/.git" && -n $expected_nvim_ref && $(git -C "$nvim_source_root" rev-parse HEAD 2>/dev/null) == "$expected_nvim_ref" ]]; then
+  pass "Neovim config checkout matches $NVIM_CONFIG_REF"
 else
-  fail "Neovim config checkout is not at the pinned commit"
+  fail "Neovim config checkout does not match $NVIM_CONFIG_REF"
 fi
 
 check_service docker.service

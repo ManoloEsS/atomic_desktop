@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the pinned external Neovim configuration for the desktop profile.
+# Install the tracked external Neovim configuration for the desktop profile.
 set -Eeuo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
@@ -44,7 +44,7 @@ backup_root="$HOME/.local/state/fedora-desktop/backups/$(date -u +%Y%m%dT%H%M%SZ
 
 if [[ $DRY_RUN == true ]]; then
   info "Would clone/update $NVIM_CONFIG_URL at $NVIM_SOURCE_ROOT"
-  info "Would check out Neovim config commit $NVIM_CONFIG_REF"
+  info "Would check out the latest Neovim config from $NVIM_CONFIG_REF"
   info "Would link $NVIM_TARGET to $config_dir"
   exit 0
 fi
@@ -67,15 +67,16 @@ else
 fi
 
 git -C "$NVIM_SOURCE_ROOT" fetch --depth=1 origin "$NVIM_CONFIG_REF"
-git -C "$NVIM_SOURCE_ROOT" checkout --detach --force "$NVIM_CONFIG_REF"
+git -C "$NVIM_SOURCE_ROOT" checkout --detach --force FETCH_HEAD
 resolved_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse HEAD)
-[[ $resolved_ref == "$NVIM_CONFIG_REF" ]] || die "Neovim source resolved to $resolved_ref, expected $NVIM_CONFIG_REF"
+fetched_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse FETCH_HEAD)
+[[ $resolved_ref == "$fetched_ref" ]] || die "Neovim source resolved to $resolved_ref, expected fetched ref $fetched_ref"
 [[ -d $config_dir ]] || die "Neovim config subdirectory is missing: $config_dir"
 config_dir=$(cd -- "$config_dir" && pwd -P)
 
 if [[ -L $NVIM_TARGET ]]; then
   if [[ $(readlink -f -- "$NVIM_TARGET") == "$config_dir" ]]; then
-    info "Neovim config link already points at pinned checkout"
+    info "Neovim config link already points at the tracked checkout"
     exit 0
   fi
   rm -- "$NVIM_TARGET"
@@ -90,4 +91,4 @@ fi
 
 mkdir -p -- "$(dirname -- "$NVIM_TARGET")"
 ln -s -- "$config_dir" "$NVIM_TARGET"
-info "Linked Neovim config to pinned checkout $resolved_ref"
+info "Linked Neovim config to $NVIM_CONFIG_REF at $resolved_ref"

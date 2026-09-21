@@ -37,7 +37,7 @@ User-local Mise
   starship, herdr, yazi, tmux, fzf, bat, eza, zoxide, gh, jj,
   Python, and Go. Dotfiles are applied through Mise native dotfiles. Neovim's
   configuration is kept in the independent kickstart.nvim repository and
-  checked out at a pinned commit.
+  follows its `master` branch.
 
 Toolbx
   fedora-desktop-dev with the minimal native packages from
@@ -54,8 +54,8 @@ outside the repository and is intentionally empty on a fresh installation.
 Neovim itself is layered into the host and installed in Toolbx for use from
 either environment. The configuration repository is cloned to
 `~/.local/share/fedora-desktop/sources/nvim` and linked to `~/.config/nvim`.
-Update `profiles/desktop/nvim-source.conf` deliberately when the independent
-configuration repository advances.
+The installer fetches the current `master` tip on each run, so changes in the
+independent configuration repository become part of the next setup run.
 
 ## Repositories
 
