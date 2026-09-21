@@ -1,0 +1,14 @@
+// Desktop output rules. Confirm with `niri msg outputs` after installation.
+// These identifiers and modes describe the reference desktop hardware.
+output "Acer Technologies ED340CU J0 54520961D3W01" {
+    mode "3440x1440@119.998"
+    scale 1
+    position x=0 y=0
+}
+
+output "Samsung Electric Company LF24T35 HCNR501668" {
+    mode "1920x1080@74.973"
+    scale 1
+    position x=-1080 y=0
+    transform "90"
+}

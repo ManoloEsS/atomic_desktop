@@ -1,0 +1,2 @@
+# Desktop uses the same locked user toolset inside and outside Toolbx.
+# This file remains an explicit overlay so the environment contract is visible.

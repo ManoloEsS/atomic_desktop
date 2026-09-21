@@ -1,0 +1,17 @@
+# Host rpm-ostree layers for the desktop profile.
+# One transaction, one reboot. Base image packages are never listed here.
+niri
+noctalia
+ghostty
+wtype
+tailscale
+zen-browser
+brave-origin
+freerdp
+openssh-server
+rsync
+inotify-tools
+docker-ce
+docker-ce-cli
+docker-buildx-plugin
+docker-compose-plugin
