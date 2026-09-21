@@ -103,7 +103,7 @@ while IFS= read -r package; do
   fi
 done < <(read_manifest "$MANIFEST_DIR/host-packages.txt")
 
-for command_name in niri noctalia ghostty wtype tailscale zen-browser brave-origin sdl-freerdp ssh docker; do
+for command_name in niri noctalia ghostty wtype nvim tailscale zen-browser brave-origin sdl-freerdp ssh docker; do
   check_command "$command_name"
 done
 
@@ -111,7 +111,7 @@ MISE_BIN="$HOME/.local/bin/mise"
 command -v "$MISE_BIN" >/dev/null 2>&1 || MISE_BIN=mise
 if command -v "$MISE_BIN" >/dev/null 2>&1; then
   pass "mise available: $MISE_BIN"
-  for tool in herdr yazi nvim tmux fzf bat eza zoxide gh jj python go starship; do
+  for tool in herdr yazi tmux fzf bat eza zoxide gh jj python go starship; do
     if "$MISE_BIN" which "$tool" >/dev/null 2>&1; then
       pass "mise tool installed: $tool"
     else
@@ -157,6 +157,22 @@ for pair in \
     check_link "$target" "$REPO_ROOT/$source"
   fi
 done
+
+nvim_source_profile="$REPO_ROOT/profiles/$PROFILE/nvim-source.conf"
+# shellcheck disable=SC1090
+source "$nvim_source_profile"
+nvim_source_root="$HOME/.local/share/fedora-desktop/sources/nvim"
+nvim_config_dir=$(readlink -m -- "$nvim_source_root/$NVIM_CONFIG_SUBDIR")
+if [[ -L $HOME/.config/nvim && $(readlink -f -- "$HOME/.config/nvim") == "$nvim_config_dir" ]]; then
+  pass "Neovim config link points at the pinned external checkout"
+else
+  fail "Neovim config link is missing or points at the wrong checkout"
+fi
+if [[ -d "$nvim_source_root/.git" && $(git -C "$nvim_source_root" rev-parse HEAD 2>/dev/null) == "$NVIM_CONFIG_REF" ]]; then
+  pass "Neovim config checkout is pinned to $NVIM_CONFIG_REF"
+else
+  fail "Neovim config checkout is not at the pinned commit"
+fi
 
 check_service docker.service
 check_service sshd.service

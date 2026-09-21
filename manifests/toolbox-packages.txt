@@ -3,5 +3,6 @@
 # Everything else personal/CLI is managed by Mise.
 git
 openssh-clients
+neovim
 # Terminfo for Ghostty (TERM=xterm-ghostty); without it every TUI breaks.
 ncurses-term

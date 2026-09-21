@@ -29,12 +29,15 @@ Silverblue base image (assumed)
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
 Host rpm-ostree layers
-  niri, noctalia, ghostty, wtype, tailscale, zen-browser, brave-origin,
-  freerdp, openssh-server, rsync, inotify-tools, Docker CE, Compose, buildx.
+  niri, noctalia, ghostty, wtype, neovim, tailscale, zen-browser,
+  brave-origin, freerdp, openssh-server, rsync, inotify-tools, Docker CE,
+  Compose, buildx.
 
 User-local Mise
-  starship, herdr, yazi, neovim, tmux, fzf, bat, eza, zoxide, gh, jj,
-  Python, and Go. Dotfiles are applied through Mise native dotfiles.
+  starship, herdr, yazi, tmux, fzf, bat, eza, zoxide, gh, jj,
+  Python, and Go. Dotfiles are applied through Mise native dotfiles. Neovim's
+  configuration is kept in the independent kickstart.nvim repository and
+  checked out at a pinned commit.
 
 Toolbx
   fedora-desktop-dev with the minimal native packages from
@@ -47,6 +50,12 @@ Flatpak
 
 The host remains small enough for rpm-ostree rollback. Runtime state is kept
 outside the repository and is intentionally empty on a fresh installation.
+
+Neovim itself is layered into the host and installed in Toolbx for use from
+either environment. The configuration repository is cloned to
+`~/.local/share/fedora-desktop/sources/nvim` and linked to `~/.config/nvim`.
+Update `profiles/desktop/nvim-source.conf` deliberately when the independent
+configuration repository advances.
 
 ## Repositories
 
@@ -131,6 +140,7 @@ bash scripts/verify.sh --profile desktop
 rpm-ostree status
 systemctl status docker sshd tailscaled
 niri msg outputs
+nvim --version
 ```
 
 Verification checks the Silverblue deployment, host layers, Mise tools and

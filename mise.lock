@@ -107,17 +107,6 @@ checksum = "sha256:f35438350b5d61963aac5dd74ede510b31d6b9690769d1a6268cf058cc825
 url = "https://github.com/jj-vcs/jj/releases/download/v0.45.1/jj-v0.45.1-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/jj-vcs/jj/releases/assets/543032052"
 
-[[tools.neovim]]
-version = "0.12.5"
-backend = "vfox:mise-plugins/vfox-neovim"
-specifiers = ["0.12.5"]
-
-[tools.neovim."platforms.linux-arm64"]
-url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-arm64.tar.gz"
-
-[tools.neovim."platforms.linux-x64"]
-url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz"
-
 [[tools.python]]
 version = "3.14.7"
 backend = "core:python"

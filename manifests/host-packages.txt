@@ -4,6 +4,7 @@ niri
 noctalia
 ghostty
 wtype
+neovim
 tailscale
 zen-browser
 brave-origin

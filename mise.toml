@@ -8,7 +8,6 @@ locked = true
 [tools]
 "aqua:herdrdev/herdr" = "0.9.1"
 yazi = "26.9.1"
-neovim = "0.12.5"
 tmux = "3.7c"
 fzf = "0.74.4"
 bat = "0.26.1"
