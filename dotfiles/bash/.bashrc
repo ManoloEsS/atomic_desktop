@@ -40,8 +40,6 @@ if [[ ! -v BASH_COMPLETION_VERSINFO && -f /usr/share/bash-completion/bash_comple
   source /usr/share/bash-completion/bash_completion
 fi
 
-set +h
-
 # Inside Toolbx only, enable the toolbox tool overlay (including Starship).
 if [[ -f /run/.toolboxenv ]]; then
   export MISE_ENV=toolbox
@@ -60,9 +58,8 @@ if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init bash)"
 fi
 
-if command -v fzf >/dev/null 2>&1; then
-  [[ -f /usr/share/fzf/completion.bash ]] && source /usr/share/fzf/completion.bash
-  [[ -f /usr/share/fzf/shell/key-bindings.bash ]] && source /usr/share/fzf/shell/key-bindings.bash
+if command -v fzf >/dev/null 2>&1 && fzf --bash >/dev/null 2>&1; then
+  eval "$(fzf --bash)"
 fi
 
 [[ -r "${HOME}/.bash_aliases" ]] && source "${HOME}/.bash_aliases"

@@ -31,8 +31,8 @@ Silverblue base image (assumed)
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
 Host rpm-ostree layers
-  niri, noctalia, ghostty, wtype, neovim, tailscale, openssh-server, rsync,
-  inotify-tools, Docker CE, Compose, buildx.
+  niri, noctalia, ghostty, wtype, neovim, tailscale, openssh-server, Docker CE,
+  Compose, buildx.
 
 User-local Mise
   latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, and jj. Dotfiles are

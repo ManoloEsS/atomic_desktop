@@ -7,8 +7,6 @@ wtype
 neovim
 tailscale
 openssh-server
-rsync
-inotify-tools
 docker-ce
 docker-ce-cli
 docker-buildx-plugin
