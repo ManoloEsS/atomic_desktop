@@ -63,5 +63,8 @@ fi
 [[ -r "${HOME}/.bash_functions" ]] && source "${HOME}/.bash_functions"
 [[ -r "${HOME}/.config/fedora-desktop/profile.sh" ]] && source "${HOME}/.config/fedora-desktop/profile.sh"
 
-# opencode
-export PATH=/home/manoloess/.opencode/bin:$PATH
+# OpenCode tools, when installed.
+if [[ -d "${HOME}/.opencode/bin" ]]; then
+  PATH="${HOME}/.opencode/bin:${PATH}"
+  export PATH
+fi

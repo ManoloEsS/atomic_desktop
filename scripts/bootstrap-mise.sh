@@ -29,8 +29,22 @@ done
 
 reject_root
 
-if [[ -x $MISE_PATH ]] && [[ $($MISE_PATH --version 2>/dev/null) == *"${WANTED_MISE_VERSION#v}"* ]]; then
+mise_matches_wanted() {
+  local version=$1
+  [[ ${version%% *} == "${WANTED_MISE_VERSION#v}" ]]
+}
+
+installed_version=
+if [[ -x $MISE_PATH ]]; then
+  installed_version=$("$MISE_PATH" --version 2>/dev/null || true)
+fi
+
+if mise_matches_wanted "$installed_version"; then
   info "Mise ${WANTED_MISE_VERSION} already installed at $MISE_PATH"
+elif [[ -n $installed_version ]]; then
+  info "Replacing Mise ${installed_version%% *} at $MISE_PATH with ${WANTED_MISE_VERSION}"
+else
+  info "Installing Mise ${WANTED_MISE_VERSION} to $MISE_PATH"
 fi
 
 if [[ $DRY_RUN == true ]]; then
@@ -40,11 +54,12 @@ fi
 
 require_command curl
 run mkdir -p -- "$HOME/.local/bin"
-if [[ ! -x $MISE_PATH ]]; then
-  info "Installing Mise ${WANTED_MISE_VERSION} to $MISE_PATH"
+if ! mise_matches_wanted "$installed_version"; then
   curl -fsSL https://mise.run | MISE_INSTALL_PATH="$MISE_PATH" MISE_VERSION="$WANTED_MISE_VERSION" sh
 fi
-"$MISE_PATH" --version
+installed_version=$("$MISE_PATH" --version 2>/dev/null || true)
+mise_matches_wanted "$installed_version" || die "Mise version mismatch: expected ${WANTED_MISE_VERSION#v}, got ${installed_version:-unavailable}"
+info "Using Mise $installed_version"
 
 if [[ $DRY_RUN == true ]]; then
   info "Would run: $MISE_PATH trust + install --locked from $REPO_ROOT/mise.toml"

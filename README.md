@@ -76,9 +76,14 @@ are installed. Recheck upstream fingerprints before changing the manifests.
 Review the scripts, manifests, and desktop profile first:
 
 ```sh
-bash install.sh --dry-run --profile desktop
-bash install.sh --profile desktop
+bash install.sh --dry-run --profile desktop --replace-dotfiles
+bash install.sh --profile desktop --replace-dotfiles
 ```
+
+On a fresh Fedora account, use `--replace-dotfiles` because Fedora creates
+standard shell dotfiles such as `.bashrc` and `.bash_profile`. Conflicting
+regular files are backed up under
+`~/.local/state/fedora-desktop/backups/` before replacement.
 
 The first pass performs preflight and layers host packages. If rpm-ostree
 creates a new deployment, the command exits with status `10`; reboot manually

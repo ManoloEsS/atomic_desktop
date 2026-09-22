@@ -62,12 +62,14 @@ if [[ ! -d "$NVIM_SOURCE_ROOT/.git" ]]; then
 else
   configured_url=$(git -C "$NVIM_SOURCE_ROOT" remote get-url origin 2>/dev/null || true)
   [[ $configured_url == "$NVIM_CONFIG_URL" ]] || die "Neovim source origin differs: $configured_url"
-  git -C "$NVIM_SOURCE_ROOT" diff --quiet || die "Neovim source checkout has unstaged changes"
-  git -C "$NVIM_SOURCE_ROOT" diff --cached --quiet || die "Neovim source checkout has staged changes"
+  checkout_status=$(git -C "$NVIM_SOURCE_ROOT" status --porcelain=v1 --untracked-files=all)
+  [[ -z $checkout_status ]] || die "Neovim source checkout has local changes or extra files; review $NVIM_SOURCE_ROOT before continuing"
 fi
 
 git -C "$NVIM_SOURCE_ROOT" fetch --depth=1 origin "$NVIM_CONFIG_REF"
 git -C "$NVIM_SOURCE_ROOT" checkout --detach --force FETCH_HEAD
+checkout_status=$(git -C "$NVIM_SOURCE_ROOT" status --porcelain=v1 --untracked-files=all --ignored)
+[[ -z $checkout_status ]] || die "Neovim source checkout has local changes or extra files after checkout"
 resolved_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse HEAD)
 fetched_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse FETCH_HEAD)
 [[ $resolved_ref == "$fetched_ref" ]] || die "Neovim source resolved to $resolved_ref, expected fetched ref $fetched_ref"
@@ -79,7 +81,12 @@ if [[ -L $NVIM_TARGET ]]; then
     info "Neovim config link already points at the tracked checkout"
     exit 0
   fi
-  rm -- "$NVIM_TARGET"
+  if [[ $REPLACE != true ]]; then
+    die "$NVIM_TARGET is an existing symlink to the wrong target; rerun with --replace-dotfiles after review"
+  fi
+  mkdir -p -- "$backup_root/.config"
+  mv -- "$NVIM_TARGET" "$backup_root/.config/nvim"
+  info "Backed up existing Neovim config link to $backup_root/.config/nvim"
 elif [[ -e $NVIM_TARGET ]]; then
   if [[ $REPLACE != true ]]; then
     die "$NVIM_TARGET is a real file or directory; rerun with --replace-dotfiles after review"
