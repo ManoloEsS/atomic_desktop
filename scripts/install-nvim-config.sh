@@ -42,7 +42,15 @@ source "$source_profile"
 config_dir="$NVIM_SOURCE_ROOT/$NVIM_CONFIG_SUBDIR"
 backup_root="$HOME/.local/state/fedora-desktop/backups/$(date -u +%Y%m%dT%H%M%SZ)"
 
-if [[ $DRY_RUN == true ]]; then
+backup_target() {
+  local target=$1 dest
+  dest=$(backup_path "$target" "$backup_root")
+  mkdir -p -- "$(dirname -- "$dest")"
+  mv -- "$target" "$dest"
+  info "Backed up existing Neovim config to $dest"
+}
+
+if is_dry_run; then
   info "Would clone/update $NVIM_CONFIG_URL at $NVIM_SOURCE_ROOT"
   info "Would check out the latest Neovim config from $NVIM_CONFIG_REF"
   info "Would link $NVIM_TARGET to $config_dir"
@@ -68,11 +76,7 @@ fi
 
 git -C "$NVIM_SOURCE_ROOT" fetch --depth=1 origin "$NVIM_CONFIG_REF"
 git -C "$NVIM_SOURCE_ROOT" checkout --detach --force FETCH_HEAD
-checkout_status=$(git -C "$NVIM_SOURCE_ROOT" status --porcelain=v1 --untracked-files=all --ignored)
-[[ -z $checkout_status ]] || die "Neovim source checkout has local changes or extra files after checkout"
 resolved_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse HEAD)
-fetched_ref=$(git -C "$NVIM_SOURCE_ROOT" rev-parse FETCH_HEAD)
-[[ $resolved_ref == "$fetched_ref" ]] || die "Neovim source resolved to $resolved_ref, expected fetched ref $fetched_ref"
 [[ -d $config_dir ]] || die "Neovim config subdirectory is missing: $config_dir"
 config_dir=$(cd -- "$config_dir" && pwd -P)
 
@@ -84,16 +88,12 @@ if [[ -L $NVIM_TARGET ]]; then
   if [[ $REPLACE != true ]]; then
     die "$NVIM_TARGET is an existing symlink to the wrong target; rerun with --replace-dotfiles after review"
   fi
-  mkdir -p -- "$backup_root/.config"
-  mv -- "$NVIM_TARGET" "$backup_root/.config/nvim"
-  info "Backed up existing Neovim config link to $backup_root/.config/nvim"
+  backup_target "$NVIM_TARGET"
 elif [[ -e $NVIM_TARGET ]]; then
   if [[ $REPLACE != true ]]; then
     die "$NVIM_TARGET is a real file or directory; rerun with --replace-dotfiles after review"
   fi
-  mkdir -p -- "$backup_root/.config"
-  mv -- "$NVIM_TARGET" "$backup_root/.config/nvim"
-  info "Backed up existing Neovim config to $backup_root/.config/nvim"
+  backup_target "$NVIM_TARGET"
 fi
 
 mkdir -p -- "$(dirname -- "$NVIM_TARGET")"

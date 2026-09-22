@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fedora Silverblue 44 Atomic desktop setup orchestrator (rerunnable, two-pass).
+# Fedora Silverblue (>= 44) Atomic desktop setup orchestrator (rerunnable, two-pass).
 set -Eeuo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)

@@ -8,17 +8,15 @@ source "$SCRIPT_DIR/common.sh"
 
 REPLACE=false
 MISE_BIN="$HOME/.local/bin/mise"
-command -v "$MISE_BIN" >/dev/null 2>&1 || MISE_BIN="mise"
+[[ -x $MISE_BIN ]] || MISE_BIN="mise"
 
-# Managed targets mirrored from mise.toml [dotfiles] for conflict backups.
-MANAGED_TARGETS=(
-  "$HOME/.bash_aliases"
-  "$HOME/.bash_functions"
-  "$HOME/.bash_profile"
-  "$HOME/.bashrc"
-  "$HOME/.inputrc"
-  "$HOME/.config/starship.toml"
-)
+# Managed targets are derived from mise.toml [dotfiles] so backups never drift
+# from what `mise bootstrap dotfiles apply` will touch.
+managed_targets() {
+  grep -oE '"~/[^"]+"' "$REPO_ROOT/mise.toml" | tr -d '"' | while IFS= read -r target; do
+    printf '%s\n' "${target/#\~/$HOME}"
+  done
+}
 
 usage() {
   printf 'Usage: %s [--profile NAME] [--dry-run] [--replace-dotfiles]\n' "${0##*/}"
@@ -48,7 +46,7 @@ reject_root
 # on the host does not help the container's separate /usr.
 if [[ -f $HOME/.terminfo/x/xterm-ghostty ]]; then
   info "user terminfo entry present: xterm-ghostty"
-elif [[ $DRY_RUN == true ]]; then
+elif is_dry_run; then
   info "Would compile dotfiles/terminfo/xterm-ghostty.ti into ~/.terminfo"
 else
   require_command tic
@@ -60,18 +58,18 @@ timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 backup_root="$HOME/.local/state/fedora-desktop/backups/$timestamp"
 
 if [[ $REPLACE == true ]]; then
-  for target in "${MANAGED_TARGETS[@]}"; do
+  while IFS= read -r target; do
     if [[ -f $target && ! -L $target ]]; then
-      rel=${target#"$HOME/"}
-      if [[ $DRY_RUN == true ]]; then
-        info "Would back up $target to $backup_root/$rel"
+      dest=$(backup_path "$target" "$backup_root")
+      if is_dry_run; then
+        info "Would back up $target to $dest"
       else
-        mkdir -p -- "$backup_root/$(dirname -- "$rel")"
-        mv -- "$target" "$backup_root/$rel"
+        mkdir -p -- "$(dirname -- "$dest")"
+        mv -- "$target" "$dest"
         info "Backed up $target"
       fi
     fi
-  done
+  done < <(managed_targets)
 fi
 
 # Remove the repository-managed .profile symlink from older revisions, but
@@ -79,7 +77,7 @@ fi
 legacy_profile="$HOME/.profile"
 legacy_source="$REPO_ROOT/dotfiles/bash/.profile"
 if [[ -L $legacy_profile && $(readlink -f -- "$legacy_profile" 2>/dev/null || true) == "$legacy_source" ]]; then
-  if [[ $DRY_RUN == true ]]; then
+  if is_dry_run; then
     info "Would remove legacy managed symlink $legacy_profile"
   else
     rm -- "$legacy_profile"
@@ -87,12 +85,12 @@ if [[ -L $legacy_profile && $(readlink -f -- "$legacy_profile" 2>/dev/null || tr
   fi
 fi
 
-if [[ $DRY_RUN == true ]]; then
+if is_dry_run; then
   info "Would run: $MISE_BIN trust $REPO_ROOT/mise.toml"
   info "Would run: $MISE_BIN bootstrap dotfiles apply --dry-run (status/diff preview)"
   print_command "$MISE_BIN" bootstrap dotfiles apply --dry-run
 else
-  require_command "$MISE_BIN"
+  command -v "$MISE_BIN" >/dev/null 2>&1 || die "required command not found: $MISE_BIN"
   "$MISE_BIN" trust "$REPO_ROOT/mise.toml"
   "$MISE_BIN" bootstrap dotfiles apply
 fi
@@ -100,9 +98,10 @@ fi
 niri_local="$HOME/.config/niri/local.kdl"
 niri_example="$REPO_ROOT/profiles/$PROFILE/local.kdl.example"
 if [[ ! -e $niri_local && ! -L $niri_local ]]; then
-  if [[ $DRY_RUN == true ]]; then
+  if is_dry_run; then
     info "Would install Niri machine-output stub to $niri_local"
   else
+    [[ -r $niri_example ]] || die "Niri output example is missing: $niri_example"
     mkdir -p -- "$HOME/.config/niri"
     cp -- "$niri_example" "$niri_local"
     info "Installed Niri machine-output stub; edit $niri_local with real output IDs"
@@ -113,19 +112,24 @@ profile_source="$REPO_ROOT/profiles/$PROFILE/profile.env"
 profile_target="$HOME/.config/fedora-desktop/profile.env"
 if [[ -r $profile_source ]]; then
   if [[ -e $profile_target || -L $profile_target ]] && [[ $(readlink -f -- "$profile_source" 2>/dev/null || true) != $(readlink -f -- "$profile_target" 2>/dev/null || true) ]]; then
-    if [[ -f $profile_target && ! -L $profile_target && $REPLACE == true ]]; then
-      if [[ $DRY_RUN == true ]]; then
-        info "Would back up $profile_target"
+    if [[ $REPLACE == true ]]; then
+      dest=$(backup_path "$profile_target" "$backup_root")
+      if is_dry_run; then
+        info "Would back up $profile_target to $dest"
       else
-        mkdir -p -- "$backup_root/.config/fedora-desktop"
-        mv -- "$profile_target" "$backup_root/.config/fedora-desktop/profile.env"
+        if [[ -f $profile_target && ! -L $profile_target ]]; then
+          mkdir -p -- "$(dirname -- "$dest")"
+          mv -- "$profile_target" "$dest"
+        else
+          rm -- "$profile_target"
+        fi
       fi
     else
       die "profile environment conflicts at $profile_target; rerun with --replace-dotfiles for a regular file"
     fi
   fi
   if [[ ! -e $profile_target && ! -L $profile_target ]]; then
-    if [[ $DRY_RUN == true ]]; then
+    if is_dry_run; then
       info "Would link $profile_source to $profile_target"
     else
       mkdir -p -- "$HOME/.config/fedora-desktop"
@@ -136,7 +140,7 @@ fi
 
 # ya ships with yazi via Mise; resolve through Mise shims since a
 # non-interactive shell has no activated PATH here.
-if [[ $DRY_RUN == true ]]; then
+if is_dry_run; then
   print_command "$MISE_BIN" exec -- ya pkg install
 elif (cd "$REPO_ROOT" && "$MISE_BIN" which ya >/dev/null 2>&1); then
   # Run from the repo so Mise discovers mise.toml tool versions.

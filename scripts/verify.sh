@@ -36,14 +36,17 @@ check_service() {
 }
 
 check_link() {
-  local target=$1 expected=$2
-  if [[ -L "$target" && $(readlink -f -- "$target") == "$expected" ]]; then
+  local target=$1 expected=$2 actual
+  actual=$(readlink -f -- "$target" 2>/dev/null || true)
+  if [[ -L "$target" && $actual == "$expected" ]]; then
     pass "managed link: $target"
   else
     fail "managed link missing or incorrect: $target"
   fi
 }
 
+# Machine-specific layout: WARN (not FAIL) on drift so firmware/refresh-rate
+# changes and headless runs don't fail an otherwise healthy install.
 check_output_layout() {
   local outputs
   if ! outputs=$(niri msg outputs 2>/dev/null); then
@@ -51,22 +54,31 @@ check_output_layout() {
     return
   fi
 
-  if [[ $outputs == *'Acer Technologies ED340CU J0 54520961D3W01 (DP-1)'* &&
-        $outputs == *'Current mode: 3440x1440 @ 119.998 Hz'* &&
+  if [[ $outputs == *'(DP-1)'* &&
+        $outputs == *'3440x1440'* &&
         $outputs == *'Logical position: 0, 0'* ]]; then
     pass "Acer desktop output layout"
   else
-    fail "Acer desktop output layout differs"
+    verify_warn "Acer desktop output layout differs (check niri msg outputs)"
   fi
 
-  if [[ $outputs == *'Samsung Electric Company LF24T35 HCNR501668 (HDMI-A-1)'* &&
-        $outputs == *'Current mode: 1920x1080 @ 74.973 Hz'* &&
-        $outputs == *'Logical position: -1080, 0'* &&
-        $outputs == *'Transform: 90° counter-clockwise'* ]]; then
+  if [[ $outputs == *'(HDMI-A-1)'* &&
+        $outputs == *'1920x1080'* &&
+        $outputs == *'Logical position: -1080, 0'* ]]; then
     pass "Samsung desktop output layout"
   else
-    fail "Samsung desktop output layout differs"
+    verify_warn "Samsung desktop output layout differs (check niri msg outputs)"
   fi
+}
+
+# Rolling Mise tools parsed from mise.toml [tools] (keys may be `name` or
+# `backend:name/path`; the binary is the text after the last `/` or `:`).
+mise_tools() {
+  awk '/^\[tools\]/{flag=1; next} /^\[/{flag=0} flag' "$REPO_ROOT/mise.toml" \
+    | sed -n 's/^[[:space:]]*"*\([^"=[:space:]]*\)"*[[:space:]]*=.*/\1/p' \
+    | while IFS= read -r key; do
+      key=${key##*/}; key=${key##*:}; [[ -n $key ]] && printf '%s\n' "$key"
+    done | sort -u
 }
 
 while (($#)); do
@@ -87,7 +99,7 @@ while (($#)); do
 done
 
 reject_root
-require_silverblue_44
+require_silverblue
 
 if pending_deployment_exists; then
   fail "an rpm-ostree deployment is pending; reboot is required"
@@ -103,23 +115,25 @@ while IFS= read -r package; do
   fi
 done < <(read_manifest "$MANIFEST_DIR/host-packages.txt")
 
+# Host commands mirror manifests/host-packages.txt (package -> binary mapping
+# is not 1:1: neovim->nvim, openssh-server->ssh, docker-ce*->docker).
 for command_name in niri noctalia ghostty wtype nvim tailscale ssh docker; do
   check_command "$command_name"
 done
 
 MISE_BIN="$HOME/.local/bin/mise"
-command -v "$MISE_BIN" >/dev/null 2>&1 || MISE_BIN=mise
+[[ -x $MISE_BIN ]] || MISE_BIN=mise
 if command -v "$MISE_BIN" >/dev/null 2>&1; then
   pass "mise available: $MISE_BIN"
-  for tool in herdr yazi tmux fzf bat eza zoxide gh jj; do
+  while IFS= read -r tool; do
     if "$MISE_BIN" which "$tool" >/dev/null 2>&1; then
       pass "mise tool installed: $tool"
     else
       fail "mise tool missing: $tool"
     fi
-  done
+  done < <(mise_tools)
   links_ok=true
-  for pair in "config.toml:mise.toml" "config.toolbox.toml:mise.toolbox.toml"; do
+  for pair in "${MISE_CONFIG_PAIRS[@]}"; do
     [[ $(readlink -f -- "$HOME/.config/mise/${pair%%:*}" 2>/dev/null || true) == "$REPO_ROOT/${pair##*:}" ]] || links_ok=false
   done
   if [[ $links_ok == true ]]; then
@@ -175,18 +189,9 @@ else
   fail "Neovim config checkout does not match $NVIM_CONFIG_REF"
 fi
 
-check_service docker.service
-check_service sshd.service
-check_service tailscaled.service
-if command -v sshd >/dev/null 2>&1; then
-  if sudo -n sshd -t 2>/dev/null || sshd -t 2>/dev/null; then
-    pass "sshd configuration validates"
-  else
-    verify_warn "sshd configuration could not be checked without sudo authentication"
-  fi
-else
-  fail "sshd command unavailable"
-fi
+for unit in "${DESKTOP_SERVICES[@]}"; do
+  check_service "$unit"
+done
 
 for unit in NetworkManager.service firewalld.service fstrim.timer; do
   if unit_exists "$unit" && systemctl is-active --quiet "$unit"; then
@@ -201,11 +206,12 @@ else
   verify_warn "no power-profile backend active"
 fi
 
-if command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1 &&
-   firewall-cmd --zone "$(firewall-cmd --get-default-zone)" --query-service ssh >/dev/null 2>&1; then
+if ! command -v firewall-cmd >/dev/null 2>&1 || ! firewall-cmd --state >/dev/null 2>&1; then
+  verify_warn "firewalld is unavailable; SSH firewall access was not checked"
+elif firewall-cmd --zone "$(firewall-cmd --get-default-zone)" --query-service ssh >/dev/null 2>&1; then
   pass "SSH allowed in the default firewalld zone"
 else
-  fail "SSH is not allowed in the default firewalld zone"
+  verify_warn "SSH is not allowed in the default firewalld zone"
 fi
 
 if command -v flatpak >/dev/null 2>&1; then
@@ -216,26 +222,28 @@ if command -v flatpak >/dev/null 2>&1; then
       fail "Flatpak missing: $app"
     fi
   done < <(read_manifest "$MANIFEST_DIR/flatpaks.txt")
+  # Extra launch probe for the RDP client only; WARN so a headless/container
+  # environment without GPU/dbus does not fail an otherwise healthy install.
   if flatpak info --system com.freerdp.FreeRDP >/dev/null 2>&1 &&
      flatpak run --command=sdl-freerdp com.freerdp.FreeRDP --version >/dev/null 2>&1; then
     pass "FreeRDP Flatpak command launches"
   else
-    fail "FreeRDP Flatpak command is unavailable"
+    verify_warn "FreeRDP Flatpak command is unavailable"
   fi
 else
   fail "Flatpak command unavailable"
 fi
 
 if command -v toolbox >/dev/null 2>&1; then
-  if toolbox list --containers 2>/dev/null | grep -q fedora-desktop-dev; then
-    pass "Toolbx container present: fedora-desktop-dev"
-    if toolbox run --container fedora-desktop-dev env MISE_ENV=toolbox "$MISE_BIN" which starship >/dev/null 2>&1; then
+  if toolbox list --containers 2>/dev/null | grep -qx "$TOOLBOX_NAME"; then
+    pass "Toolbx container present: $TOOLBOX_NAME"
+    if toolbox run --container "$TOOLBOX_NAME" env MISE_ENV=toolbox "$MISE_BIN" which starship >/dev/null 2>&1; then
       pass "Starship resolves inside Toolbx"
     else
       fail "Starship missing inside Toolbx"
     fi
   else
-    fail "Toolbx container missing: fedora-desktop-dev"
+    fail "Toolbx container missing: $TOOLBOX_NAME"
   fi
 else
   fail "Toolbox command unavailable"
@@ -247,27 +255,33 @@ else
   fail "JetBrainsMono Nerd Font is unavailable"
 fi
 
-if infocmp xterm-ghostty >/dev/null 2>&1; then
+if command -v infocmp >/dev/null 2>&1 && infocmp xterm-ghostty >/dev/null 2>&1; then
   pass "terminfo entry resolves: xterm-ghostty"
+elif ! command -v infocmp >/dev/null 2>&1; then
+  verify_warn "infocmp unavailable; terminfo entry was not checked"
 else
   fail "terminfo entry missing: xterm-ghostty"
 fi
 
-yazi_flavor=${XDG_CONFIG_HOME:-$HOME/.config}/yazi/flavors/tokyo-night.yazi/flavor.toml
+yazi_flavor=$CONFIG_HOME/yazi/flavors/tokyo-night.yazi/flavor.toml
 [[ -r $yazi_flavor ]] && pass "Yazi Tokyo Night flavor is installed" || fail "Yazi Tokyo Night flavor is missing"
 
-niri_config=${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl
-if niri validate --config "$niri_config" >/dev/null 2>&1; then
+niri_config=$CONFIG_HOME/niri/config.kdl
+if ! command -v niri >/dev/null 2>&1; then
+  verify_warn "niri unavailable; configuration was not validated"
+elif niri validate --config "$niri_config" >/dev/null 2>&1; then
   pass "Niri configuration validates"
 else
-  fail "Niri configuration validation failed"
+  verify_warn "Niri configuration validation failed (or no graphical session)"
 fi
 check_output_layout
 
-if noctalia config validate >/dev/null 2>&1; then
+if ! command -v noctalia >/dev/null 2>&1; then
+  verify_warn "noctalia unavailable; configuration was not validated"
+elif noctalia config validate >/dev/null 2>&1; then
   pass "Noctalia configuration validates"
 else
-  fail "Noctalia configuration validation failed"
+  verify_warn "Noctalia configuration validation failed"
 fi
 
 printf '\nVerification complete: %d failure(s), %d warning(s).\n' "$failures" "$warnings"

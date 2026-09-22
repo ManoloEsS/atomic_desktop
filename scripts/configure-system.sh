@@ -25,7 +25,7 @@ while (($#)); do
 done
 
 reject_root
-require_silverblue_44
+require_silverblue
 require_booted_deployment_current
 require_command sudo
 require_command systemctl
@@ -34,12 +34,11 @@ enable_service() {
   local unit=$1
   if ! unit_exists "$unit"; then
     warn "required desktop service is not installed: $unit"
-  elif systemctl is-enabled --quiet "$unit" && systemctl is-active --quiet "$unit"; then
-    info "Service already enabled and active: $unit"
-  else
-    run_root systemctl enable --now "$unit"
-    info "Enabled desktop service: $unit"
+    return
   fi
+  # `enable --now` is idempotent; no need to probe state first.
+  run_root systemctl enable --now "$unit"
+  info "Enabled desktop service: $unit"
 }
 
 report_base_service() {
@@ -59,7 +58,7 @@ allow_ssh_in_default_zone() {
     return
   fi
 
-  require_command firewall-cmd
+  command -v firewall-cmd >/dev/null 2>&1 || { warn "firewall-cmd is unavailable; SSH firewall access was not changed"; return; }
   local zone
   zone=$(firewall-cmd --get-default-zone)
   if firewall-cmd --zone "$zone" --query-service ssh >/dev/null 2>&1; then
@@ -71,9 +70,9 @@ allow_ssh_in_default_zone() {
   fi
 }
 
-enable_service docker.service
-enable_service sshd.service
-enable_service tailscaled.service
+for unit in "${DESKTOP_SERVICES[@]}"; do
+  enable_service "$unit"
+done
 allow_ssh_in_default_zone
 
 report_base_service NetworkManager.service

@@ -39,30 +39,25 @@ else
   info "Installing the latest Mise release to $MISE_PATH"
 fi
 
-if [[ $DRY_RUN == true ]]; then
+if is_dry_run; then
   info "Would install/update the latest Mise release to $MISE_PATH via the official installer"
   exit 0
 fi
 
 require_command curl
-run mkdir -p -- "$HOME/.local/bin"
+mkdir -p -- "$HOME/.local/bin"
+# Intentionally unpinned: desktop tools track rolling `latest` (see README).
+# Repository GPG keys and fonts stay pinned; Mise itself is TLS-trusted.
 curl -fsSL https://mise.run | MISE_INSTALL_PATH="$MISE_PATH" sh
 installed_version=$("$MISE_PATH" --version 2>/dev/null || true)
 [[ -n $installed_version ]] || die "Mise installation failed or produced no version"
 info "Using Mise $installed_version"
 
-if [[ $DRY_RUN == true ]]; then
-  info "Would run: $MISE_PATH trust + install/upgrade from $REPO_ROOT/mise.toml"
-  exit 0
-fi
-
 "$MISE_PATH" trust "$REPO_ROOT/mise.toml"
 (
   cd "$REPO_ROOT"
   "$MISE_PATH" install
-  "$MISE_PATH" upgrade
   MISE_ENV=toolbox "$MISE_PATH" install
-  MISE_ENV=toolbox "$MISE_PATH" upgrade
 )
 
 # Make repo tools resolve in EVERY directory (not just the checkout) by
@@ -70,7 +65,7 @@ fi
 # relative to the repo root, so this is safe.
 mkdir -p -- "$HOME/.config/mise"
 # config.toolbox.toml is the MISE_ENV=toolbox overlay.
-for pair in "config.toml:mise.toml" "config.toolbox.toml:mise.toolbox.toml"; do
+for pair in "${MISE_CONFIG_PAIRS[@]}"; do
   target="$HOME/.config/mise/${pair%%:*}"
   source="$REPO_ROOT/${pair##*:}"
   if [[ -L $target && $(readlink -f -- "$target" 2>/dev/null || true) == "$source" ]]; then
@@ -80,18 +75,5 @@ for pair in "config.toml:mise.toml" "config.toolbox.toml:mise.toolbox.toml"; do
   else
     ln -s -- "$source" "$target"
     info "linked global Mise ${pair%%:*} to repository"
-  fi
-done
-
-# Remove lockfile links created by older desktop revisions, but refuse to
-# remove unrelated files from the user's Mise configuration directory.
-for pair in "mise.lock:mise.lock" "mise.toolbox.lock:mise.toolbox.lock"; do
-  target="$HOME/.config/mise/${pair%%:*}"
-  source="$REPO_ROOT/${pair##*:}"
-  if [[ -L $target && $(readlink -f -- "$target" 2>/dev/null || true) == "$source" ]]; then
-    rm -- "$target"
-    info "removed legacy global Mise lockfile link: ${pair%%:*}"
-  elif [[ -e $target || -L $target ]]; then
-    die "legacy Mise lockfile conflicts at $target; remove it manually"
   fi
 done

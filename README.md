@@ -1,6 +1,7 @@
 # Atomic Desktop
 
-Automated Fedora Silverblue 44 setup for the desktop currently described by
+Automated Fedora Silverblue (44 or newer) setup for the desktop currently
+described by
 `deomarchyfy_fedora`. Host layers and application manifests are declarative;
 user-local Mise tools intentionally track the latest releases when the
 installer is rerun. This project recreates desktop functionality on a fresh
@@ -69,6 +70,25 @@ Only repositories needed by the declared host layers are configured:
 
 COPR and vendor signing keys are fingerprint-checked before repository files
 are installed. Recheck upstream fingerprints before changing the manifests.
+All vendor and COPR repositories (including Tailscale) are declared
+data-driven in `manifests/vendor-repositories.conf` and
+`manifests/external-repositories.conf`. Flathub relies on its embedded
+`.flatpakrepo` signature over TLS instead of a pinned fingerprint.
+
+## Assumptions
+
+- Fedora Silverblue `>= 44`, booted via ostree, with `sudo` available.
+- GNU bash and coreutils on the host and in Toolbx.
+- `XDG_CONFIG_HOME` is honored when set, otherwise `~/.config`.
+- Mise tools track rolling `latest` and carry no lockfile by design; run
+  `mise upgrade` manually between installer runs if desired. The Mise
+  installer itself is TLS-trusted (`https://mise.run`), while repository keys
+  and fonts stay fingerprint/SHA-pinned.
+- The Neovim config follows its `master` tip on every run (non-idempotent by
+  design).
+- The verifier treats machine-specific state (monitor layout, Niri/Noctalia
+  validators, firewall SSH, FreeRDP launch probe) as warnings, not failures,
+  so headless runs and firmware refresh-rate changes do not fail verification.
 
 ## Installation
 
@@ -86,8 +106,8 @@ regular files are backed up under
 
 The first pass performs preflight and layers host packages. If rpm-ostree
 creates a new deployment, the command exits with status `10`; reboot manually
-and run the same command again. The second pass updates Mise, installs and
-upgrades the latest configured CLI tools, applies dotfiles, installs Flatpaks,
+and run the same command again. The second pass installs the latest configured
+Mise CLI tools, applies dotfiles, installs Flatpaks,
 creates Toolbx, and verifies the result.
 
 The installer enables Docker, `sshd`, and `tailscaled`, but does not authenticate

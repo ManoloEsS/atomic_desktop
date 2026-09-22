@@ -8,14 +8,16 @@ export BAT_THEME="ansi"
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
+# Mise shims and ~/.local/bin come first so rolling user tools shadow the
+# system defaults (mise activate also prepends when it runs below).
 case ":${PATH}:" in
   *":${HOME}/.local/bin:"*) ;;
-  *) PATH="${PATH:+${PATH}:}${HOME}/.local/bin" ;;
+  *) PATH="${HOME}/.local/bin${PATH:+:${PATH}}" ;;
 esac
 
 case ":${PATH}:" in
   *":${HOME}/.local/share/mise/shims:"*) ;;
-  *) PATH="${PATH:+${PATH}:}${HOME}/.local/share/mise/shims" ;;
+  *) PATH="${HOME}/.local/share/mise/shims${PATH:+:${PATH}}" ;;
 esac
 export PATH
 
