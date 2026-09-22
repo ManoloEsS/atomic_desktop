@@ -36,7 +36,6 @@ done
 [[ -r $MANIFEST_DIR/toolbox-packages.txt ]] || die "missing toolbox package manifest"
 [[ -r $MANIFEST_DIR/flatpaks.txt ]] || die "missing flatpak manifest"
 [[ -r $REPO_ROOT/mise.toml ]] || die "missing mise.toml"
-[[ -r $REPO_ROOT/mise.lock ]] || die "missing mise.lock"
 
 if [[ $DRY_RUN == true ]]; then
   info "dry-run: skipping sudo credential check (zero side effects)"

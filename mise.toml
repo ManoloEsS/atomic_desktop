@@ -1,23 +1,19 @@
-# atomic_desktop: user-local tools and dotfiles.
-# Install Mise to ~/.local/bin, then: mise install --locked && mise dot apply
+# atomic_desktop: rolling user-local tools and dotfiles.
+# Install Mise to ~/.local/bin, then: mise install && mise upgrade
 min_version = { hard = "2026.9.4" }
 
-[tool_config]
-locked = true
-
 [tools]
-"aqua:herdrdev/herdr" = "0.9.1"
-yazi = "26.9.1"
-tmux = "3.7c"
-fzf = "0.74.4"
-bat = "0.26.1"
-eza = "0.23.5"
-zoxide = "0.10.0"
-gh = "2.101.0"
-jj = "0.45.1"
-python = "3.14.7"
-go = "1.27.1"
-starship = "1.26.0"
+"aqua:herdrdev/herdr" = "latest"
+yazi = "latest"
+tmux = "latest"
+fzf = "latest"
+bat = "latest"
+eza = "latest"
+zoxide = "latest"
+gh = "latest"
+jj = "latest"
+
+# Language runtimes belong in each project's Mise configuration.
 
 [dotfiles]
 "~/.bash_aliases" = { source = "dotfiles/bash/.bash_aliases", mode = "symlink" }

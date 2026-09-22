@@ -103,7 +103,7 @@ while IFS= read -r package; do
   fi
 done < <(read_manifest "$MANIFEST_DIR/host-packages.txt")
 
-for command_name in niri noctalia ghostty wtype nvim tailscale zen-browser brave-origin sdl-freerdp ssh docker; do
+for command_name in niri noctalia ghostty wtype nvim tailscale ssh docker; do
   check_command "$command_name"
 done
 
@@ -111,7 +111,7 @@ MISE_BIN="$HOME/.local/bin/mise"
 command -v "$MISE_BIN" >/dev/null 2>&1 || MISE_BIN=mise
 if command -v "$MISE_BIN" >/dev/null 2>&1; then
   pass "mise available: $MISE_BIN"
-  for tool in herdr yazi tmux fzf bat eza zoxide gh jj python go starship; do
+  for tool in herdr yazi tmux fzf bat eza zoxide gh jj; do
     if "$MISE_BIN" which "$tool" >/dev/null 2>&1; then
       pass "mise tool installed: $tool"
     else
@@ -119,11 +119,11 @@ if command -v "$MISE_BIN" >/dev/null 2>&1; then
     fi
   done
   links_ok=true
-  for pair in "config.toml:mise.toml" "mise.lock:mise.lock" "config.toolbox.toml:mise.toolbox.toml" "mise.toolbox.lock:mise.toolbox.lock"; do
+  for pair in "config.toml:mise.toml" "config.toolbox.toml:mise.toolbox.toml"; do
     [[ $(readlink -f -- "$HOME/.config/mise/${pair%%:*}" 2>/dev/null || true) == "$REPO_ROOT/${pair##*:}" ]] || links_ok=false
   done
   if [[ $links_ok == true ]]; then
-    pass "global Mise config and lockfiles point at repository"
+    pass "global Mise configs point at repository"
   else
     fail "global Mise links are missing or incorrect"
   fi
@@ -216,6 +216,12 @@ if command -v flatpak >/dev/null 2>&1; then
       fail "Flatpak missing: $app"
     fi
   done < <(read_manifest "$MANIFEST_DIR/flatpaks.txt")
+  if flatpak info --system com.freerdp.FreeRDP >/dev/null 2>&1 &&
+     flatpak run --command=sdl-freerdp com.freerdp.FreeRDP --version >/dev/null 2>&1; then
+    pass "FreeRDP Flatpak command launches"
+  else
+    fail "FreeRDP Flatpak command is unavailable"
+  fi
 else
   fail "Flatpak command unavailable"
 fi

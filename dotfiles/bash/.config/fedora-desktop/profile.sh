@@ -5,5 +5,5 @@ if [[ -r "$profile_env" ]]; then
 fi
 
 if [[ -n "${FEDORA_DESKTOP_RDP_HOST:-}" && -n "${FEDORA_DESKTOP_RDP_USER:-}" ]]; then
-  alias win-rdp="sdl-freerdp /v:${FEDORA_DESKTOP_RDP_HOST} /u:${FEDORA_DESKTOP_RDP_USER} /dynamic-resolution +clipboard"
+  alias win-rdp="flatpak run --command=sdl-freerdp com.freerdp.FreeRDP /v:${FEDORA_DESKTOP_RDP_HOST} /u:${FEDORA_DESKTOP_RDP_USER} /dynamic-resolution +clipboard"
 fi

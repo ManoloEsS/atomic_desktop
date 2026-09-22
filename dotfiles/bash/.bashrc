@@ -42,11 +42,17 @@ fi
 
 set +h
 
+# Inside Toolbx only, enable the toolbox tool overlay (including Starship).
+if [[ -f /run/.toolboxenv ]]; then
+  export MISE_ENV=toolbox
+fi
+
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate bash)"
 fi
 
-if [[ ${TERM:-} != "dumb" ]] && command -v starship >/dev/null 2>&1; then
+# Starship lives in the dev container only, never on the host.
+if [[ -f /run/.toolboxenv && ${TERM:-} != "dumb" ]] && starship --version >/dev/null 2>&1; then
   eval "$(starship init bash)"
 fi
 

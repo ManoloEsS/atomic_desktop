@@ -1,7 +1,9 @@
 # Atomic Desktop
 
-Reproducible Fedora Silverblue 44 setup for the desktop currently described by
-`deomarchyfy_fedora`. This project recreates desktop functionality on a fresh
+Automated Fedora Silverblue 44 setup for the desktop currently described by
+`deomarchyfy_fedora`. Host layers and application manifests are declarative;
+user-local Mise tools intentionally track the latest releases when the
+installer is rerun. This project recreates desktop functionality on a fresh
 system; it does not migrate credentials, application state, containers, or
 machine identities.
 
@@ -12,8 +14,8 @@ The desktop profile preserves:
 - Niri with the current Acer landscape and Samsung portrait layout.
 - Noctalia bar, launcher, notifications, lock screen, power controls, and
   desktop-specific output widgets.
-- Ghostty, Zen Browser, Brave Origin, FreeRDP, Spotify, and the existing shell
-  workflow.
+- Ghostty, Zen Browser, Brave, FreeRDP, Spotify, and the existing shell
+  workflow. Standalone GUI applications are installed as Flatpaks.
 - Docker CE, OpenSSH server, Tailscale, firewalld, tuned-ppd, and fstrim.
 - Mise-managed CLI tools, Yazi, Herdr, tmux, and the Toolbx development
   container.
@@ -29,23 +31,22 @@ Silverblue base image (assumed)
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
 Host rpm-ostree layers
-  niri, noctalia, ghostty, wtype, neovim, tailscale, zen-browser,
-  brave-origin, freerdp, openssh-server, rsync, inotify-tools, Docker CE,
-  Compose, buildx.
+  niri, noctalia, ghostty, wtype, neovim, tailscale, openssh-server, rsync,
+  inotify-tools, Docker CE, Compose, buildx.
 
 User-local Mise
-  starship, herdr, yazi, tmux, fzf, bat, eza, zoxide, gh, jj,
-  Python, and Go. Dotfiles are applied through Mise native dotfiles. Neovim's
-  configuration is kept in the independent kickstart.nvim repository and
-  follows its `master` branch.
+  latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, and jj. Dotfiles are
+  applied through Mise native dotfiles. Neovim's configuration is kept in the
+  independent kickstart.nvim repository and follows its `master` branch.
 
 Toolbx
   fedora-desktop-dev with the minimal native packages from
-  manifests/toolbox-packages.txt. The same locked Mise toolset is available
-  inside the container.
+  manifests/toolbox-packages.txt. The same rolling Mise CLI tools are
+  available inside the container, with Starship enabled only by the Toolbox
+  overlay.
 
 Flatpak
-  FreeRDP and Spotify from Flathub.
+  Zen Browser, Brave, FreeRDP, and Spotify from Flathub.
 ```
 
 The host remains small enough for rpm-ostree rollback. Runtime state is kept
@@ -63,8 +64,6 @@ Only repositories needed by the declared host layers are configured:
 
 - Fedora and Fedora Updates from the Silverblue base.
 - Ghostty COPR `scottames/ghostty`.
-- Zen Browser COPR `sneexy/zen-browser`.
-- Brave Browser's official RPM repository.
 - Docker CE's official Fedora repository.
 - Tailscale's official Fedora repository.
 
@@ -87,9 +86,9 @@ regular files are backed up under
 
 The first pass performs preflight and layers host packages. If rpm-ostree
 creates a new deployment, the command exits with status `10`; reboot manually
-and run the same command again. The second pass configures services, installs
-Mise tools and dotfiles, installs Flatpaks, creates Toolbx, and verifies the
-result.
+and run the same command again. The second pass updates Mise, installs and
+upgrades the latest configured CLI tools, applies dotfiles, installs Flatpaks,
+creates Toolbx, and verifies the result.
 
 The installer enables Docker, `sshd`, and `tailscaled`, but does not authenticate
 or populate them. Authenticate a fresh machine manually:
@@ -102,16 +101,41 @@ gh auth login
 Docker starts with no migrated containers, images, or volumes. The installer
 does not add the user to Docker's root-equivalent group automatically.
 
+On a host that already layered the old desktop browser and FreeRDP packages,
+remove those host layers manually before or after applying this manifest:
+
+```sh
+sudo rpm-ostree uninstall zen-browser brave-origin freerdp
+sudo reboot
+```
+
+Existing repository files are not removed automatically. Inspect them and
+remove old Zen or Brave repository files separately once no installed package
+needs them.
+
 ## Dotfiles and Profile
 
-Dotfiles are managed by the locked Mise configuration in `mise.toml`; GNU Stow
-is not used. Inspect convergence before applying changes:
+Dotfiles are managed by the Mise configuration in `mise.toml`; GNU Stow is not
+used. Inspect convergence before applying changes:
 
 ```sh
 mise bootstrap dotfiles status
 mise bootstrap dotfiles diff
 mise bootstrap dotfiles apply --dry-run
 ```
+
+Global Mise tools are intentionally rolling. Project language runtimes are not
+installed by this desktop profile; declare them in each project instead:
+
+```sh
+cd /path/to/project
+mise use python@3.13
+mise use go@1.24
+```
+
+Projects that need reproducible tool resolution can maintain their own
+`mise.lock` and use `mise install --locked`; that policy is independent of
+this desktop bootstrap.
 
 The desktop output rules are installed from
 `profiles/desktop/local.kdl.example`. They are tracked because this repository
@@ -148,8 +172,8 @@ niri msg outputs
 nvim --version
 ```
 
-Verification checks the Silverblue deployment, host layers, Mise tools and
-links, Niri and Noctalia configuration, exact monitor modes, Docker/SSH/
+Verification checks the Silverblue deployment, host layers, rolling Mise tools
+and links, Niri and Noctalia configuration, exact monitor modes, Docker/SSH/
 Tailscale services, firewalld SSH access, Flatpaks, Toolbx, fonts, and Ghostty
 terminfo.
 

@@ -1,3 +1,5 @@
 # Desktop Flatpak app IDs, installed system-wide from Flathub.
+app.zen_browser.zen
+com.brave.Browser
 com.freerdp.FreeRDP
 com.spotify.Client

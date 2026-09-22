@@ -6,9 +6,6 @@ ghostty
 wtype
 neovim
 tailscale
-zen-browser
-brave-origin
-freerdp
 openssh-server
 rsync
 inotify-tools
