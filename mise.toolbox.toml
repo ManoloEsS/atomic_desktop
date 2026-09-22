@@ -1,4 +1,0 @@
-# Tool overlay active only with MISE_ENV=toolbox (inside fedora-desktop-dev).
-# Global CLI tools remain available in both environments; Starship is Toolbox-only.
-[tools]
-starship = "latest"

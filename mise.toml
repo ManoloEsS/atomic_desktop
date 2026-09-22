@@ -12,6 +12,11 @@ eza = "latest"
 zoxide = "latest"
 gh = "latest"
 jj = "latest"
+opencode = "latest"
+neovim = "latest"
+ripgrep = "latest"
+tree-sitter = "latest"
+starship = "latest"
 
 # Language runtimes belong in each project's Mise configuration.
 

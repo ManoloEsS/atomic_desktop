@@ -31,20 +31,26 @@ Silverblue base image (assumed)
   GNOME/GDM, git, openssh client, toolbox, podman, flatpak, fontconfig,
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
-Host rpm-ostree layers
-  niri, noctalia, ghostty, wtype, neovim, tailscale, openssh-server, Docker CE,
-  Compose, buildx.
+Host packages and services
+  rpm-ostree layers: niri, noctalia, ghostty, wtype, gcc, make, tailscale,
+  Docker CE, Compose, buildx. OpenSSH server and wl-clipboard are in the base
+  and are ensured but not layered. docker-ce-cli is a dependency of docker-ce
+  and is not listed explicitly.
 
 User-local Mise
-  latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, and jj. Dotfiles are
-  applied through Mise native dotfiles. Neovim's configuration is kept in the
-  independent kickstart.nvim repository and follows its `master` branch.
+  latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, jj, OpenCode, Neovim,
+  ripgrep, Tree-sitter CLI, and Starship. Dotfiles are applied through Mise
+  native dotfiles. Neovim's configuration is kept in the independent kickstart.nvim
+  repository and
+  follows its `master` branch.
 
 Toolbx
-  fedora-desktop-dev with the minimal native packages from
-  manifests/toolbox-packages.txt. The same rolling Mise CLI tools are
-  available inside the container, with Starship enabled only by the Toolbox
-  overlay.
+  dev with the minimal native packages from
+  manifests/toolbox-packages.txt (gcc, make, wl-clipboard; git and
+  openssh-clients are already in the fedora-toolbox base image). The same
+  rolling Mise CLI tools are available inside the container. Starship is
+  global (host and Toolbx) and shows a `⬢ [dev]` marker inside containers
+  via its `container` module.
 
 Flatpak
   Zen Browser, Brave, FreeRDP, and Spotify from Flathub.
@@ -53,8 +59,8 @@ Flatpak
 The host remains small enough for rpm-ostree rollback. Runtime state is kept
 outside the repository and is intentionally empty on a fresh installation.
 
-Neovim itself is layered into the host and installed in Toolbx for use from
-either environment. The configuration repository is cloned to
+Neovim is installed once through Mise and is available on both the host and in
+Toolbx. Its configuration repository is cloned to
 `~/.local/share/fedora-desktop/sources/nvim` and linked to `~/.config/nvim`.
 The installer fetches the current `master` tip on each run, so changes in the
 independent configuration repository become part of the next setup run.
@@ -126,6 +132,15 @@ remove those host layers manually before or after applying this manifest:
 
 ```sh
 sudo rpm-ostree uninstall zen-browser brave-origin freerdp
+sudo reboot
+```
+
+On an existing host, migrate Neovim from its old RPM layer to Mise and retain
+the native build tools with:
+
+```sh
+sudo rpm-ostree uninstall --allow-inactive \
+  --install=gcc --install=make --install=wl-clipboard neovim
 sudo reboot
 ```
 

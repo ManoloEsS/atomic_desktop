@@ -42,17 +42,14 @@ if [[ ! -v BASH_COMPLETION_VERSINFO && -f /usr/share/bash-completion/bash_comple
   source /usr/share/bash-completion/bash_completion
 fi
 
-# Inside Toolbx only, enable the toolbox tool overlay (including Starship).
-if [[ -f /run/.toolboxenv ]]; then
-  export MISE_ENV=toolbox
-fi
-
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate bash)"
 fi
 
-# Starship lives in the dev container only, never on the host.
-if [[ -f /run/.toolboxenv && ${TERM:-} != "dumb" ]] && starship --version >/dev/null 2>&1; then
+# Starship is global (host and Toolbx share the same Mise toolset).
+# The prompt shows a `⬢ [dev]` marker inside containers via the
+# starship `container` module and nothing extra on the host.
+if [[ ${TERM:-} != "dumb" ]] && starship --version >/dev/null 2>&1; then
   eval "$(starship init bash)"
 fi
 

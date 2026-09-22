@@ -28,7 +28,8 @@ done
 reject_root
 require_command toolbox
 
-if ! toolbox list --containers 2>/dev/null | grep -qx "$TOOLBOX_NAME"; then
+if ! toolbox list --containers 2>/dev/null \
+  | awk -v name="$TOOLBOX_NAME" '$2 == name { found = 1 } END { exit !found }'; then
   # -y auto-downloads the matching fedora-toolbox image on first run.
   run toolbox create --assumeyes "$TOOLBOX_NAME"
 else

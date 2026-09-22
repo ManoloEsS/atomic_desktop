@@ -57,14 +57,20 @@ info "Using Mise $installed_version"
 (
   cd "$REPO_ROOT"
   "$MISE_PATH" install
-  MISE_ENV=toolbox "$MISE_PATH" install
 )
 
 # Make repo tools resolve in EVERY directory (not just the checkout) by
-# pointing the global Mise configs at the repo files. Dotfile sources stay
+# pointing the global Mise config at the repo file. Dotfile sources stay
 # relative to the repo root, so this is safe.
+# Host and Toolbx share the same toolset (including Starship); the prompt
+# itself shows a toolbox marker via the starship `container` module.
 mkdir -p -- "$HOME/.config/mise"
-# config.toolbox.toml is the MISE_ENV=toolbox overlay.
+# Remove the retired toolbox-only overlay link (Starship is now global).
+legacy_overlay="$HOME/.config/mise/config.toolbox.toml"
+if [[ -L $legacy_overlay ]]; then
+  rm -- "$legacy_overlay"
+  info "Removed retired Mise overlay link: $legacy_overlay"
+fi
 for pair in "${MISE_CONFIG_PAIRS[@]}"; do
   target="$HOME/.config/mise/${pair%%:*}"
   source="$REPO_ROOT/${pair##*:}"

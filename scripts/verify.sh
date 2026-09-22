@@ -81,6 +81,15 @@ mise_tools() {
     done | sort -u
 }
 
+mise_tool_available() {
+  case $1 in
+    neovim) "$MISE_BIN" exec -- nvim --version >/dev/null 2>&1 ;;
+    ripgrep) "$MISE_BIN" exec -- rg --version >/dev/null 2>&1 ;;
+    tree-sitter) "$MISE_BIN" exec -- tree-sitter --version >/dev/null 2>&1 ;;
+    *) "$MISE_BIN" which "$1" >/dev/null 2>&1 ;;
+  esac
+}
+
 while (($#)); do
   case $1 in
     --dry-run) DRY_RUN=true ;;
@@ -115,9 +124,15 @@ while IFS= read -r package; do
   fi
 done < <(read_manifest "$MANIFEST_DIR/host-packages.txt")
 
-# Host commands mirror manifests/host-packages.txt (package -> binary mapping
-# is not 1:1: neovim->nvim, openssh-server->ssh, docker-ce*->docker).
-for command_name in niri noctalia ghostty wtype nvim tailscale ssh docker; do
+if rpm -q --quiet neovim; then
+  fail "host Neovim RPM is still installed; migrate to Mise"
+else
+  pass "host Neovim is Mise-managed, not RPM-installed"
+fi
+
+# Host commands include desktop tools, host-integrated services, and shared
+# Mise shims.
+for command_name in niri noctalia ghostty wtype gcc make wl-copy nvim rg tree-sitter tailscale ssh docker; do
   check_command "$command_name"
 done
 
@@ -126,8 +141,8 @@ MISE_BIN="$HOME/.local/bin/mise"
 if command -v "$MISE_BIN" >/dev/null 2>&1; then
   pass "mise available: $MISE_BIN"
   while IFS= read -r tool; do
-    if "$MISE_BIN" which "$tool" >/dev/null 2>&1; then
-      pass "mise tool installed: $tool"
+    if mise_tool_available "$tool"; then
+      pass "mise tool installed and runnable: $tool"
     else
       fail "mise tool missing: $tool"
     fi
@@ -235,12 +250,32 @@ else
 fi
 
 if command -v toolbox >/dev/null 2>&1; then
-  if toolbox list --containers 2>/dev/null | grep -qx "$TOOLBOX_NAME"; then
+if toolbox list --containers 2>/dev/null \
+  | awk -v name="$TOOLBOX_NAME" '$2 == name { found = 1 } END { exit !found }'; then
     pass "Toolbx container present: $TOOLBOX_NAME"
-    if toolbox run --container "$TOOLBOX_NAME" env MISE_ENV=toolbox "$MISE_BIN" which starship >/dev/null 2>&1; then
+    if toolbox run --container "$TOOLBOX_NAME" rpm -q --quiet gcc make wl-clipboard; then
+      pass "Toolbx native Neovim build/clipboard packages are installed"
+    else
+      fail "Toolbx native Neovim build/clipboard packages are missing"
+    fi
+    if toolbox run --container "$TOOLBOX_NAME" rpm -q --quiet neovim; then
+      fail "Toolbx Neovim RPM is still installed; use Mise"
+    else
+      pass "Toolbx Neovim is Mise-managed, not RPM-installed"
+    fi
+    if toolbox run --container "$TOOLBOX_NAME" "$MISE_BIN" which starship >/dev/null 2>&1; then
       pass "Starship resolves inside Toolbx"
     else
       fail "Starship missing inside Toolbx"
+    fi
+    if toolbox run --container "$TOOLBOX_NAME" "$MISE_BIN" exec -- starship print-config >/dev/null 2>&1; then
+      if toolbox run --container "$TOOLBOX_NAME" "$MISE_BIN" exec -- starship print-config 2>/dev/null | grep -q '^\[container\]'; then
+        pass "Starship toolbox marker is configured"
+      else
+        fail "Starship toolbox marker is missing"
+      fi
+    else
+      verify_warn "Starship config was not checked inside Toolbx"
     fi
   else
     fail "Toolbx container missing: $TOOLBOX_NAME"
