@@ -138,6 +138,24 @@ if [[ -r $profile_source ]]; then
   fi
 fi
 
+# Notify-only update checker: user timer, enabled once its unit is linked
+# into ~/.config/systemd/user by the Mise dotfiles above.
+update_timer="$HOME/.config/systemd/user/fedora-update-check.timer"
+if [[ ! -e $update_timer && ! -L $update_timer ]]; then
+  warn "update-check timer unit is not linked; skipping timer enablement"
+elif is_dry_run; then
+  print_command systemctl --user daemon-reload
+  print_command systemctl --user enable --now fedora-update-check.timer
+else
+  if ! command -v systemctl >/dev/null 2>&1; then
+    warn "systemctl is unavailable; update-check timer was not enabled"
+  elif run systemctl --user daemon-reload && run systemctl --user enable --now fedora-update-check.timer; then
+    info "Enabled user update-check timer: fedora-update-check.timer"
+  else
+    warn "update-check timer could not be enabled (user manager unavailable?)"
+  fi
+fi
+
 # ya ships with yazi via Mise; resolve through Mise shims since a
 # non-interactive shell has no activated PATH here.
 if is_dry_run; then

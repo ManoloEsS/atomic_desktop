@@ -188,6 +188,27 @@ niri msg outputs
 `profiles/desktop/profile.env` is ignored and may contain an optional RDP host
 and username. It must never contain passwords, tokens, or private keys.
 
+## Updates
+
+There is no GNOME Software here, so updates are explicit and notify-only.
+Two streams are covered; everything else stays manual:
+
+- OS deployment (`rpm-ostree`, base plus host layers).
+- System Flatpaks.
+
+A daily user timer (`fedora-update-check.timer`) runs
+`fedora-update-check`, which performs read-only checks and sends one
+Noctalia notification when the pending set changes (a state file prevents
+repeat nags). Nothing is staged or applied automatically; reboot timing
+stays yours, which matters on a machine with persistent toolbox and Herdr
+sessions.
+
+Act on a notification with `Super+Alt+U` or by running `fedora-update` in
+a terminal: it stages the OS deployment (takes effect on reboot) and
+updates system Flatpaks immediately. Deliberately out of scope: Mise tools
+(`mise upgrade` when you choose), the toolbox userland (`dnf upgrade`
+inside `dev`), firmware (`fwupdmgr`), and Neovim/Mason packages.
+
 ## Remote Development over Tailscale SSH
 
 SSH sessions land on the host and authenticate through Tailscale identity,

@@ -171,6 +171,20 @@ else
   fail "Mise dotfiles have missing or conflicting entries"
 fi
 
+for helper in fedora-update-check fedora-update; do
+  if command -v "$helper" >/dev/null 2>&1; then
+    pass "update helper resolves: $helper"
+  else
+    fail "update helper missing: $helper"
+  fi
+done
+
+if systemctl --user is-enabled --quiet fedora-update-check.timer 2>/dev/null; then
+  pass "update-check timer is enabled"
+else
+  fail "update-check timer is not enabled"
+fi
+
 for pair in \
   "$HOME/.bashrc:dotfiles/bash/.bashrc" \
   "$HOME/.config/niri/config.kdl:dotfiles/niri/.config/niri/config.kdl" \

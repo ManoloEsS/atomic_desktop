@@ -43,5 +43,6 @@ fd = "latest"
 "~/.config/noctalia" = { source = "dotfiles/noctalia/.config/noctalia", mode = "symlink-each" }
 "~/.config/tmux" = { source = "dotfiles/tmux/.config/tmux", mode = "symlink-each" }
 "~/.config/yazi" = { source = "dotfiles/yazi/.config/yazi", mode = "symlink-each" }
-"~/.local/bin" = { source = "dotfiles/niri/.local/bin", mode = "symlink-each" }
+"~/.local/bin" = { source = "dotfiles/local-bin/.local/bin", mode = "symlink-each" }
+"~/.config/systemd/user" = { source = "dotfiles/systemd/.config/systemd/user", mode = "symlink-each" }
 "~/.config/starship.toml" = { source = "dotfiles/starship/.config/starship.toml", mode = "symlink" }
