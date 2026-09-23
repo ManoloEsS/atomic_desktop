@@ -39,8 +39,12 @@ Host packages and services
 
 User-local Mise
   latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, jj, OpenCode, Neovim,
-  ripgrep, Tree-sitter CLI, and Starship. Dotfiles are applied through Mise
-  native dotfiles. Neovim's configuration is kept in the independent kickstart.nvim
+  ripgrep, Tree-sitter CLI, Starship, Node (npm for Mason), lazygit,
+  prettierd, and fd. Node exists globally so Mason can install its
+  npm-based packages; lazygit backs `<leader>gg`, prettierd backs conform
+  for JS/TS, and fd backs Snacks explorer and Telescope. Language runtimes
+  (Go, Rust, Python versions) stay per-project. Dotfiles are applied through
+  Mise native dotfiles. Neovim's configuration is kept in the independent kickstart.nvim
   repository and
   follows its `master` branch.
 

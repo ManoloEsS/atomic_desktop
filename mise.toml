@@ -17,6 +17,16 @@ neovim = "latest"
 ripgrep = "latest"
 tree-sitter = "latest"
 starship = "latest"
+# Node provides npm for Mason's npm-based packages (prettier,
+# markdownlint-cli2) after the old system nodejs layer is gone.
+node = "latest"
+# Binaries the Neovim config shells out to but nothing installs:
+# lazygit (<leader>gg) and prettierd (conform for JS/TS).
+lazygit = "latest"
+"npm:@fsouza/prettierd" = "latest"
+# Snacks explorer searching and Telescope require fd (rg/find fallbacks
+# do not cover the explorer source).
+fd = "latest"
 
 # Language runtimes belong in each project's Mise configuration.
 
