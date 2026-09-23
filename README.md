@@ -117,10 +117,11 @@ Mise CLI tools, applies dotfiles, installs Flatpaks,
 creates Toolbx, and verifies the result.
 
 The installer enables Docker, `sshd`, and `tailscaled`, but does not authenticate
-or populate them. Authenticate a fresh machine manually:
+or populate them. Authenticate a fresh machine manually (remote development
+uses Tailscale SSH, so include `--ssh` and grant access in the tailnet policy):
 
 ```sh
-sudo tailscale up
+sudo tailscale up --ssh
 gh auth login
 ```
 
@@ -182,6 +183,41 @@ niri msg outputs
 
 `profiles/desktop/profile.env` is ignored and may contain an optional RDP host
 and username. It must never contain passwords, tokens, or private keys.
+
+## Remote Development over Tailscale SSH
+
+SSH sessions land on the host and authenticate through Tailscale identity,
+so no SSH keys are needed on clients. Tailscale SSH sessions skip
+`pam_systemd`, leaving `XDG_RUNTIME_DIR` unset; without it rootless
+Podman/Toolbox fails with `failed to initialize container`. The managed
+`.bashrc` repairs this automatically (before the non-interactive early
+return), so `toolbox enter dev` and `toolbox run --container dev …` work
+from any Tailscale SSH shell.
+
+Herdr follows "run where the work lives, attach from wherever you are":
+
+- The persistent **default** Herdr session runs **inside the `dev`
+  toolbox** — every pane is a toolbox environment by default. Its sockets
+  live in `~/.config/herdr/`, which `$HOME`-sharing makes attachable from
+  the host side, so SSH in and run `herdr` to pick up dev panes. This path
+  never invokes the Podman client and is unaffected by the session-env
+  issue above.
+- Host administration (`rpm-ostree`, system services) uses a separate
+  **named** session on the host: `herdr session attach admin`. Named
+  sessions have independent panes, sockets, and runtime state, so the two
+  servers never collide over the shared socket directory.
+
+After a reboot the toolbox container is not running, so neither is its
+Herdr server. Revive it manually (no autostart unit by design):
+
+```sh
+toolbox enter dev
+herdr
+```
+
+Rerunning `herdr` restores the saved session layout (workspaces, tabs,
+panes), not the running processes; relaunch agents afterwards. Detach any
+client with the configured prefix + `q`; panes keep running.
 
 ## Fresh-System Boundary
 

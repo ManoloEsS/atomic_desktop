@@ -8,6 +8,9 @@ wtype
 gcc
 make
 wl-clipboard
+# Provides /usr/bin/git for the Neovim config clone; the base image and
+# noctalia already satisfy this, so it is normally skipped, not layered.
+git-core
 tailscale
 openssh-server
 docker-ce

@@ -21,6 +21,20 @@ case ":${PATH}:" in
 esac
 export PATH
 
+# Tailscale SSH sessions skip pam_systemd, so XDG_RUNTIME_DIR is unset and
+# rootless Podman/Toolbox fails with "failed to initialize container".
+# Repair it whenever the per-user runtime dir exists (no-op otherwise).
+# Placed before the non-interactive early return so toolbox works in
+# every shell, including `tailscale ssh` sessions.
+if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+  _runtime_dir="/run/user/$(id -u)"
+  if [[ -d "$_runtime_dir" ]]; then
+    XDG_RUNTIME_DIR="$_runtime_dir"
+    export XDG_RUNTIME_DIR
+  fi
+  unset _runtime_dir
+fi
+
 [[ -r "${HOME}/.cargo/env" ]] && source "${HOME}/.cargo/env"
 
 if [[ -z "${LANG:-}" ]]; then
