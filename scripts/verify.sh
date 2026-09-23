@@ -263,6 +263,14 @@ else
   fail "Flatpak command unavailable"
 fi
 
+if ! command -v xdg-settings >/dev/null 2>&1; then
+  verify_warn "xdg-settings unavailable; default browser was not checked"
+elif [[ $(xdg-settings get default-web-browser 2>/dev/null || true) == "$ZEN_DESKTOP_FILE" ]]; then
+  pass "default browser is Zen"
+else
+  fail "default browser is not Zen (got $(xdg-settings get default-web-browser 2>/dev/null || echo unknown))"
+fi
+
 if command -v toolbox >/dev/null 2>&1; then
 if toolbox list --containers 2>/dev/null \
   | awk -v name="$TOOLBOX_NAME" '$2 == name { found = 1 } END { exit !found }'; then

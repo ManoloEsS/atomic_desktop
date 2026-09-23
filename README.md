@@ -58,6 +58,7 @@ Toolbx
 
 Flatpak
   Zen Browser, Brave, FreeRDP, and Spotify from Flathub.
+  Zen is the default browser (set at install, checked by verify).
 ```
 
 The host remains small enough for rpm-ostree rollback. Runtime state is kept

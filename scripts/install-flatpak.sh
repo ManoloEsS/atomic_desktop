@@ -41,4 +41,17 @@ for app in "${apps[@]}"; do
   fi
 done
 
+# Zen is the declared default browser (checked by verify.sh). Its desktop
+# file is exported once the Flatpak above is installed.
+if ! command -v xdg-settings >/dev/null 2>&1; then
+  warn "xdg-settings is unavailable; default browser was not set"
+elif [[ $(xdg-settings get default-web-browser 2>/dev/null || true) == "$ZEN_DESKTOP_FILE" ]]; then
+  info "Default browser is already Zen"
+elif is_dry_run; then
+  info "Would set default browser to $ZEN_DESKTOP_FILE"
+else
+  xdg-settings set default-web-browser "$ZEN_DESKTOP_FILE"
+  info "Set default browser to Zen"
+fi
+
 info "Flatpak phase complete"
