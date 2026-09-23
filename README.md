@@ -188,6 +188,8 @@ niri msg outputs
 
 `profiles/desktop/profile.env` is ignored and may contain an optional RDP host
 and username. It must never contain passwords, tokens, or private keys.
+See [other_tools/dockur-rdp.md](other_tools/dockur-rdp.md) for the Dockur VM's
+RDP endpoint and `win-rdp` usage.
 
 ## Updates
 

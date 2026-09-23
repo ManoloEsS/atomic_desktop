@@ -5,5 +5,16 @@ if [[ -r "$profile_env" ]]; then
 fi
 
 if [[ -n "${FEDORA_DESKTOP_RDP_HOST:-}" && -n "${FEDORA_DESKTOP_RDP_USER:-}" ]]; then
-  alias win-rdp="flatpak run --command=sdl-freerdp com.freerdp.FreeRDP /v:${FEDORA_DESKTOP_RDP_HOST} /u:${FEDORA_DESKTOP_RDP_USER} /dynamic-resolution +clipboard"
+  if command -v flatpak >/dev/null 2>&1; then
+    _fedora_desktop_rdp_launcher="flatpak"
+  elif command -v flatpak-spawn >/dev/null 2>&1; then
+    _fedora_desktop_rdp_launcher="flatpak-spawn --host flatpak"
+  else
+    _fedora_desktop_rdp_launcher=""
+  fi
+
+  if [[ -n "$_fedora_desktop_rdp_launcher" ]]; then
+    alias win-rdp="${_fedora_desktop_rdp_launcher} run --command=sdl-freerdp com.freerdp.FreeRDP /v:${FEDORA_DESKTOP_RDP_HOST} /u:${FEDORA_DESKTOP_RDP_USER} /dynamic-resolution +clipboard"
+  fi
+  unset _fedora_desktop_rdp_launcher
 fi
