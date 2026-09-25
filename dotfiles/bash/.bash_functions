@@ -21,3 +21,16 @@ n() {
     command nvim "$@"
   fi
 }
+
+herdev() {
+  toolbox run --container dev herdr
+}
+
+adm() {
+  herdr session attach admin
+}
+
+packettracer() {
+    distrobox enter ubuntu -- packettracer "$@"
+}
+

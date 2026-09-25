@@ -3,6 +3,7 @@ alias ls='command ls --color=auto'
 alias vim='nvim'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias admin='herdr session attach admin'
 
 if command -v eza >/dev/null 2>&1; then
   alias ez='eza --icons --git'

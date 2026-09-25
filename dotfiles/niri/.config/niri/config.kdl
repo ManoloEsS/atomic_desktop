@@ -20,7 +20,7 @@ input {
         // off
         // natural-scroll
         accel-speed 0.1
-        // accel-profile "flat"
+        accel-profile "flat"
         // scroll-method "no-scroll"
     }
 
@@ -96,8 +96,8 @@ animations {
 
 blur {
     passes 0
-    offset 3
-    noise 0.02
+    offset 1
+    noise 0.05
     saturation 1.5
 }
 

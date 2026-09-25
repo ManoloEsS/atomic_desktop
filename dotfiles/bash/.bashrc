@@ -84,3 +84,4 @@ if [[ -d "${HOME}/.opencode/bin" ]]; then
   PATH="${HOME}/.opencode/bin:${PATH}"
   export PATH
 fi
+export PATH="$HOME/.local/bin:$PATH"
