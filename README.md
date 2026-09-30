@@ -191,6 +191,12 @@ and username. It must never contain passwords, tokens, or private keys.
 See [other_tools/dockur-rdp.md](other_tools/dockur-rdp.md) for the Dockur VM's
 RDP endpoint and `win-rdp` usage.
 
+## Optional Hardware Setup
+
+Printer configuration is machine-specific and is not part of the automated
+install. For optional host-side CUPS setup on Fedora Silverblue, see
+[other_tools/printer-setup.md](other_tools/printer-setup.md).
+
 ## Updates
 
 There is no GNOME Software here, so updates are explicit and notify-only.
