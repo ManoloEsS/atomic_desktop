@@ -197,6 +197,12 @@ Printer configuration is machine-specific and is not part of the automated
 install. For optional host-side CUPS setup on Fedora Silverblue, see
 [other_tools/printer-setup.md](other_tools/printer-setup.md).
 
+## Optional Software Setup
+
+For host-side Wireshark/TShark packet capture and the Toolbx capture limitation,
+see
+[other_tools/wireshark-capture.md](other_tools/wireshark-capture.md).
+
 ## Updates
 
 There is no GNOME Software here, so updates are explicit and notify-only.
