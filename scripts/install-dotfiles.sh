@@ -59,7 +59,17 @@ backup_root="$HOME/.local/state/fedora-desktop/backups/$timestamp"
 
 if [[ $REPLACE == true ]]; then
   while IFS= read -r target; do
+    should_back_up=false
     if [[ -f $target && ! -L $target ]]; then
+      should_back_up=true
+    elif [[ $target == "$HOME/.config/nvim" && ( -e $target || -L $target ) ]]; then
+      expected_nvim_source="$HOME/.local/share/fedora-desktop/sources/nvim"
+      if [[ ! -L $target || $(readlink -m -- "$target" 2>/dev/null || true) != $(readlink -m -- "$expected_nvim_source") ]]; then
+        should_back_up=true
+      fi
+    fi
+
+    if [[ $should_back_up == true ]]; then
       dest=$(backup_path "$target" "$backup_root")
       if is_dry_run; then
         info "Would back up $target to $dest"
@@ -87,11 +97,18 @@ fi
 
 if is_dry_run; then
   info "Would run: $MISE_BIN trust $REPO_ROOT/mise.toml"
+  info "Would run: $MISE_BIN bootstrap repos apply/update --skip-dirty (Neovim config checkout)"
+  print_command "$MISE_BIN" bootstrap repos apply --skip-dirty
+  print_command "$MISE_BIN" bootstrap repos update --skip-dirty
   info "Would run: $MISE_BIN bootstrap dotfiles apply --dry-run (status/diff preview)"
   print_command "$MISE_BIN" bootstrap dotfiles apply --dry-run
 else
   command -v "$MISE_BIN" >/dev/null 2>&1 || die "required command not found: $MISE_BIN"
   "$MISE_BIN" trust "$REPO_ROOT/mise.toml"
+  # Converge external checkouts before applying links that point into them.
+  # Dirty checkouts are skipped and never overwritten.
+  (cd "$REPO_ROOT" && "$MISE_BIN" bootstrap repos apply --skip-dirty)
+  (cd "$REPO_ROOT" && "$MISE_BIN" bootstrap repos update --skip-dirty)
   "$MISE_BIN" bootstrap dotfiles apply
 fi
 

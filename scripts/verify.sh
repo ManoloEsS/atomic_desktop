@@ -201,21 +201,31 @@ for pair in \
   fi
 done
 
-nvim_source_profile="$REPO_ROOT/profiles/$PROFILE/nvim-source.conf"
-# shellcheck disable=SC1090
-source "$nvim_source_profile"
-nvim_source_root="$HOME/.local/share/fedora-desktop/sources/nvim"
-nvim_config_dir=$(readlink -m -- "$nvim_source_root/$NVIM_CONFIG_SUBDIR")
-if [[ -L $HOME/.config/nvim && $(readlink -f -- "$HOME/.config/nvim") == "$nvim_config_dir" ]]; then
-  pass "Neovim config link points at the external checkout"
+# Neovim source path and ref are owned by mise.toml [bootstrap.repos].
+nvim_repo_config=$(awk '/^\[bootstrap\.repos\]/{flag=1; next} /^\[/{flag=0} flag' "$REPO_ROOT/mise.toml")
+nvim_source_root=$(printf '%s\n' "$nvim_repo_config" | grep -oE '"~/[^"]+"' | head -1 | tr -d '"' | sed "s|^~|$HOME|")
+nvim_source_ref=$(printf '%s\n' "$nvim_repo_config" | grep -oE 'ref *= *"[^"]+"' | head -1 | cut -d'"' -f2)
+if [[ -z $nvim_source_root || -z $nvim_source_ref ]]; then
+  fail "Neovim repo manifest is missing from mise.toml [bootstrap.repos]"
 else
-  fail "Neovim config link is missing or points at the wrong checkout"
-fi
-expected_nvim_ref=$(git -C "$nvim_source_root" rev-parse "origin/$NVIM_CONFIG_REF^{commit}" 2>/dev/null || git -C "$nvim_source_root" rev-parse FETCH_HEAD 2>/dev/null || true)
-if [[ -d "$nvim_source_root/.git" && -n $expected_nvim_ref && $(git -C "$nvim_source_root" rev-parse HEAD 2>/dev/null) == "$expected_nvim_ref" ]]; then
-  pass "Neovim config checkout matches $NVIM_CONFIG_REF"
-else
-  fail "Neovim config checkout does not match $NVIM_CONFIG_REF"
+  if [[ -L $HOME/.config/nvim && $(readlink -f -- "$HOME/.config/nvim") == "$nvim_source_root" ]]; then
+    pass "Neovim config link points at the Mise-managed checkout"
+  else
+    fail "Neovim config link is missing or points at the wrong checkout"
+  fi
+
+  if [[ ! -d "$nvim_source_root/.git" ]]; then
+    fail "Neovim checkout is missing: $nvim_source_root"
+  else
+    expected_nvim_ref=$(git -C "$nvim_source_root" rev-parse "origin/$nvim_source_ref^{commit}" 2>/dev/null || git -C "$nvim_source_root" rev-parse FETCH_HEAD 2>/dev/null || true)
+    if [[ -n $expected_nvim_ref && $(git -C "$nvim_source_root" rev-parse HEAD 2>/dev/null) == "$expected_nvim_ref" ]]; then
+      pass "Neovim config checkout matches $nvim_source_ref"
+    elif [[ -n $(git -C "$nvim_source_root" status --porcelain=v1 2>/dev/null) ]]; then
+      verify_warn "Neovim checkout has local changes (Mise updates skipped); reconcile and rerun the dotfiles phase"
+    else
+      verify_warn "Neovim checkout does not match $nvim_source_ref; rerun Mise bootstrap repos update"
+    fi
+  fi
 fi
 
 for unit in "${DESKTOP_SERVICES[@]}"; do

@@ -66,9 +66,20 @@ outside the repository and is intentionally empty on a fresh installation.
 
 Neovim is installed once through Mise and is available on both the host and in
 Toolbx. Its configuration repository is cloned to
-`~/.local/share/fedora-desktop/sources/nvim` and linked to `~/.config/nvim`.
-The installer fetches the current `master` tip on each run, so changes in the
-independent configuration repository become part of the next setup run.
+`~/.local/share/fedora-desktop/sources/nvim` through `[bootstrap.repos]` in
+`mise.toml`; `[dotfiles]` links that checkout to `~/.config/nvim`. The dotfiles
+phase runs `mise bootstrap repos apply/update --skip-dirty` before applying
+links. Dirty checkouts are preserved and skipped; commit or otherwise reconcile
+local changes, then rerun the dotfiles phase to fetch the current `master` tip.
+When migrating an older checkout whose Git history diverged under the previous
+updater, preserve it under a backup name so Mise can clone a clean checkout at
+the configured path:
+
+```sh
+mv ~/.local/share/fedora-desktop/sources/nvim \
+  ~/.local/share/fedora-desktop/sources/nvim.backup.$(date -u +%Y%m%dT%H%M%SZ)
+bash scripts/install-dotfiles.sh --profile desktop
+```
 
 ## Repositories
 
@@ -95,8 +106,8 @@ data-driven in `manifests/vendor-repositories.conf` and
   `mise upgrade` manually between installer runs if desired. The Mise
   installer itself is TLS-trusted (`https://mise.run`), while repository keys
   and fonts stay fingerprint/SHA-pinned.
-- The Neovim config follows its `master` tip on every run (non-idempotent by
-  design).
+- The Neovim checkout follows its `master` tip when Mise updates a clean repo;
+  dirty local edits are preserved and skipped.
 - The verifier treats machine-specific state (monitor layout, Niri/Noctalia
   validators, firewall SSH, FreeRDP launch probe) as warnings, not failures,
   so headless runs and firmware refresh-rate changes do not fail verification.
@@ -112,13 +123,13 @@ bash install.sh --profile desktop --replace-dotfiles
 
 On a fresh Fedora account, use `--replace-dotfiles` because Fedora creates
 standard shell dotfiles such as `.bashrc` and `.bash_profile`. Conflicting
-regular files are backed up under
+managed files and conflicting Neovim config paths are backed up under
 `~/.local/state/fedora-desktop/backups/` before replacement.
 
 The first pass performs preflight and layers host packages. If rpm-ostree
 creates a new deployment, the command exits with status `10`; reboot manually
 and run the same command again. The second pass installs the latest configured
-Mise CLI tools, applies dotfiles, installs Flatpaks,
+Mise CLI tools, updates clean Mise bootstrap repos, applies dotfiles, installs Flatpaks,
 creates Toolbx, and verifies the result.
 
 The installer enables Docker, `sshd`, and `tailscaled`, but does not authenticate
