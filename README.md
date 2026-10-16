@@ -17,7 +17,8 @@ The desktop profile preserves:
   desktop-specific output widgets.
 - Ghostty, Zen Browser, Brave, FreeRDP, Spotify, and the existing shell
   workflow. Standalone GUI applications are installed as Flatpaks.
-- Docker CE, OpenSSH server, Tailscale, firewalld, tuned-ppd, and fstrim.
+- Rootless Podman with Compose, OpenSSH server, Tailscale, firewalld,
+  tuned-ppd, and fstrim.
 - Mise-managed CLI tools, Yazi, Herdr, tmux, and the Toolbx development
   container.
 
@@ -33,9 +34,8 @@ Silverblue base image (assumed)
 
 Host packages and services
   rpm-ostree layers: niri, noctalia, ghostty, wtype, gcc, make, tailscale,
-  Docker CE, Compose, buildx. OpenSSH server and wl-clipboard are in the base
-  and are ensured but not layered. docker-ce-cli is a dependency of docker-ce
-  and is not listed explicitly.
+  and podman-compose. Podman is provided by the Silverblue base. OpenSSH server
+  and wl-clipboard are in the base and are ensured but not layered.
 
 User-local Mise
   latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, jj, OpenCode, Neovim,
@@ -51,10 +51,12 @@ User-local Mise
 Toolbx
   dev with the minimal native packages from
   manifests/toolbox-packages.txt (gcc, make, wl-clipboard; git and
-  openssh-clients are already in the fedora-toolbox base image). The same
-  rolling Mise CLI tools are available inside the container. Starship is
-  global (host and Toolbx) and shows a `⬢ [dev]` marker inside containers
-  via its `container` module.
+  openssh-clients are already in the fedora-toolbox base image). In interactive
+  `dev` shells, the `podman` alias forwards to the host with
+  `flatpak-spawn --host podman`; host rootless Podman and its Compose provider
+  manage containers. The same rolling Mise CLI tools are available inside the
+  container. Starship is global (host and Toolbx) and shows a `⬢ [dev]` marker
+  inside containers via its `container` module.
 
 Flatpak
   Zen Browser, Brave, FreeRDP, and Spotify from Flathub.
@@ -87,7 +89,6 @@ Only repositories needed by the declared host layers are configured:
 
 - Fedora and Fedora Updates from the Silverblue base.
 - Ghostty COPR `scottames/ghostty`.
-- Docker CE's official Fedora repository.
 - Tailscale's official Fedora repository.
 
 COPR and vendor signing keys are fingerprint-checked before repository files
@@ -126,23 +127,40 @@ standard shell dotfiles such as `.bashrc` and `.bash_profile`. Conflicting
 managed files and conflicting Neovim config paths are backed up under
 `~/.local/state/fedora-desktop/backups/` before replacement.
 
-The first pass performs preflight and layers host packages. If rpm-ostree
-creates a new deployment, the command exits with status `10`; reboot manually
-and run the same command again. The second pass installs the latest configured
+The first pass performs preflight and converges host packages, including
+removing the retired Docker CE layers. If rpm-ostree creates a new deployment,
+the command exits with status `10`; reboot manually and run the same command
+again. The second pass installs the latest configured
 Mise CLI tools, updates clean Mise bootstrap repos, applies dotfiles, installs Flatpaks,
 creates Toolbx, and verifies the result.
 
-The installer enables Docker, `sshd`, and `tailscaled`, but does not authenticate
-or populate them. Authenticate a fresh machine manually (remote development
-uses Tailscale SSH, so include `--ssh` and grant access in the tailnet policy):
+The installer enables `sshd` and `tailscaled`, but does not authenticate or
+populate them. Podman is rootless and does not need a system daemon. Authenticate
+a fresh machine manually (remote development uses Tailscale SSH, so include
+`--ssh` and grant access in the tailnet policy):
 
 ```sh
 sudo tailscale up --ssh
 gh auth login
 ```
 
-Docker starts with no migrated containers, images, or volumes. The installer
-does not add the user to Docker's root-equivalent group automatically.
+Podman starts with no migrated containers, images, or volumes. No Docker daemon,
+Docker group, socket forwarding, or Docker repository is configured. The
+interactive `podman` alias in `dev` invokes the host's Podman as the same user;
+projects in the shared home directory are accessible to both environments.
+`podman compose` uses the host-installed `podman-compose` provider. Dockerfiles
+and common Compose projects generally work, but validate projects that depend on
+Docker-specific or advanced BuildKit features.
+
+On an existing installation, rerun `install.sh` after pulling these changes.
+The package phase stages `podman-compose` and removes the old Docker CE, Buildx,
+and Compose host packages in the same rpm-ostree deployment where possible; then
+reboot and rerun the installer. It does not delete `/var/lib/docker`, existing
+container data, or the old `/etc/yum.repos.d/docker-ce.repo`; inspect and clean
+those up separately after confirming nothing still depends on them. On rerun,
+the Toolbx phase also removes the Docker/Moby packages previously installed
+manually in `dev`; unrelated Toolbox packages and Podman container state are
+left alone.
 
 On a host that already layered the old desktop browser and FreeRDP packages,
 remove those host layers manually before or after applying this manifest:
@@ -162,8 +180,8 @@ sudo reboot
 ```
 
 Existing repository files are not removed automatically. Inspect them and
-remove old Zen or Brave repository files separately once no installed package
-needs them.
+remove old Zen, Brave, or Docker repository files separately once no installed
+package needs them.
 
 ## Dotfiles and Profile
 
@@ -276,7 +294,7 @@ This project does not restore or copy:
 
 - SSH or GPG keys, GitHub credentials, browser profiles, or Tailscale state.
 - SSH host keys or old `/etc` configuration.
-- Docker containers, images, volumes, or `/var/lib/docker`.
+- Podman containers, images, volumes, or `~/.local/share/containers`.
 - Flatpak application data or old home-directory state.
 
 The clean install creates new identities and fresh application state. User data
@@ -289,15 +307,17 @@ The final phase runs the read-only verifier:
 ```sh
 bash scripts/verify.sh --profile desktop
 rpm-ostree status
-systemctl status docker sshd tailscaled
+systemctl status sshd tailscaled
+podman info
+podman compose version
 niri msg outputs
 nvim --version
 ```
 
 Verification checks the Silverblue deployment, host layers, rolling Mise tools
-and links, Niri and Noctalia configuration, exact monitor modes, Docker/SSH/
-Tailscale services, firewalld SSH access, Flatpaks, Toolbx, fonts, and Ghostty
-terminfo.
+and links, Niri and Noctalia configuration, exact monitor modes, Podman and its
+Compose provider, SSH/Tailscale services, firewalld SSH access, Flatpaks,
+Toolbx's host-Podman alias, fonts, and Ghostty terminfo.
 
 If a deployment fails, select the previous boot entry or run:
 

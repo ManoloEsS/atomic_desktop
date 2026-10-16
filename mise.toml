@@ -30,6 +30,8 @@ fd = "latest"
 # Go toolchain: required by Mason to build/install gopls (LSP) and
 # delve (DAP) for the Neovim config.
 go = "latest"
+lazydocker = "latest"
+podman-tui = "latest"
 
 # Language runtimes belong in each project's Mise configuration.
 

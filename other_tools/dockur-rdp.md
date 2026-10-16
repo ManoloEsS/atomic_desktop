@@ -9,9 +9,9 @@ guest, not the Linux host or the container's console address:
 - Current Windows username: `labuser` (from the Compose configuration)
 
 The container is configured on the `windows-lan` network and the Windows guest
-gets its own address. Docker's `PORTS` column may therefore be empty; that does
-not mean RDP needs a host port mapping. The guest's TCP port 3389 must be
-reachable directly at `192.168.1.24`.
+gets its own address. The container runtime's `PORTS` column may therefore be
+empty; that does not mean RDP needs a host port mapping. The guest's TCP port
+3389 must be reachable directly at `192.168.1.24`.
 
 ## Configure the Bash alias
 

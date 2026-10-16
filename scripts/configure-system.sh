@@ -85,5 +85,5 @@ else
 fi
 
 info 'Tailscale service is ready; authenticate this fresh machine with "sudo tailscale up"'
-info 'Docker service is ready with no migrated containers or volumes'
+info 'Rootless Podman is provided by the Silverblue base; Compose uses podman-compose'
 info "System configuration complete for profile: $PROFILE"
