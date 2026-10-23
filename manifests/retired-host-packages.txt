@@ -1,5 +1,0 @@
-# Docker packages from the previous desktop profile. These are removed while
-# applying the Podman-based host package state.
-docker-ce
-docker-buildx-plugin
-docker-compose-plugin

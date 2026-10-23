@@ -125,7 +125,7 @@ while IFS= read -r package; do
 done < <(read_manifest "$MANIFEST_DIR/host-packages.txt")
 
 if rpm -q --quiet neovim; then
-  fail "host Neovim RPM is still installed; migrate to Mise"
+  fail "host Neovim RPM is installed; the profile expects Mise-managed Neovim"
 else
   pass "host Neovim is Mise-managed, not RPM-installed"
 fi
@@ -271,7 +271,7 @@ else
 fi
 
 if command -v flatpak >/dev/null 2>&1; then
-  while IFS= read -r app; do
+  while IFS='|' read -r app source url checksum; do
     if flatpak info --system "$app" >/dev/null 2>&1; then
       pass "Flatpak installed: $app"
     else
@@ -292,10 +292,10 @@ fi
 
 if ! command -v xdg-settings >/dev/null 2>&1; then
   verify_warn "xdg-settings unavailable; default browser was not checked"
-elif [[ $(xdg-settings get default-web-browser 2>/dev/null || true) == "$ZEN_DESKTOP_FILE" ]]; then
-  pass "default browser is Zen"
+elif [[ $(xdg-settings get default-web-browser 2>/dev/null || true) == "$BRAVE_DESKTOP_FILE" ]]; then
+  pass "default browser is Brave Origin"
 else
-  fail "default browser is not Zen (got $(xdg-settings get default-web-browser 2>/dev/null || echo unknown))"
+  fail "default browser is not Brave Origin (got $(xdg-settings get default-web-browser 2>/dev/null || echo unknown))"
 fi
 
 if command -v toolbox >/dev/null 2>&1; then
@@ -337,11 +337,6 @@ if toolbox list --containers 2>/dev/null \
     else
       fail "Toolbx cannot invoke host Podman via flatpak-spawn"
     fi
-    while IFS= read -r package; do
-      if toolbox run --container "$TOOLBOX_NAME" rpm -q --quiet "$package"; then
-        fail "retired Docker/Moby package remains in Toolbx: $package"
-      fi
-    done < <(read_manifest "$MANIFEST_DIR/retired-toolbox-packages.txt")
   else
     fail "Toolbx container missing: $TOOLBOX_NAME"
   fi

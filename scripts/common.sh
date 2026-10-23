@@ -20,7 +20,7 @@ MIN_FEDORA_VERSION=44
 
 # Single source of truth for names shared by install + verify scripts.
 TOOLBOX_NAME=dev
-ZEN_DESKTOP_FILE="app.zen_browser.zen.desktop"
+BRAVE_DESKTOP_FILE="brave-origin.desktop"
 DESKTOP_SERVICES=(sshd.service tailscaled.service)
 MISE_CONFIG_PAIRS=("config.toml:mise.toml")
 

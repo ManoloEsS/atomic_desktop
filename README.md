@@ -10,13 +10,14 @@ machine identities.
 
 ## Scope
 
-The desktop profile preserves:
+The desktop profile defines the desired setup for a new system:
 
 - Niri with the current Acer landscape and Samsung portrait layout.
 - Noctalia bar, launcher, notifications, lock screen, power controls, and
   desktop-specific output widgets.
-- Ghostty, Zen Browser, Brave, FreeRDP, Spotify, and the existing shell
-  workflow. Standalone GUI applications are installed as Flatpaks.
+- Ghostty, Brave Origin, FreeRDP, Spotifast, and the existing shell workflow.
+  Brave Origin is the host RPM and default browser; FreeRDP is a system
+  Flatpak. Spotifast is a system Flatpak from its publisher's release bundle.
 - Rootless Podman with Compose, OpenSSH server, Tailscale, firewalld,
   tuned-ppd, and fstrim.
 - Mise-managed CLI tools, Yazi, Herdr, tmux, and the Toolbx development
@@ -33,8 +34,8 @@ Silverblue base image (assumed)
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
 Host packages and services
-  rpm-ostree layers: niri, noctalia, ghostty, wtype, gcc, make, tailscale,
-  and podman-compose. Podman is provided by the Silverblue base. OpenSSH server
+  rpm-ostree layers: niri, noctalia, ghostty, wtype, brave-origin, gcc, make,
+  tailscale, and podman-compose. Podman is provided by the Silverblue base. OpenSSH server
   and wl-clipboard are in the base and are ensured but not layered.
 
 User-local Mise
@@ -59,8 +60,8 @@ Toolbx
   inside containers via its `container` module.
 
 Flatpak
-  Zen Browser, Brave, FreeRDP, and Spotify from Flathub.
-  Zen is the default browser (set at install, checked by verify).
+  FreeRDP from Flathub and Spotifast from its publisher's release bundle.
+  Both are installed system-wide and declared in `manifests/flatpaks.txt`.
 ```
 
 The host remains small enough for rpm-ostree rollback. Runtime state is kept
@@ -88,6 +89,8 @@ bash scripts/install-dotfiles.sh --profile desktop
 Only repositories needed by the declared host layers are configured:
 
 - Fedora and Fedora Updates from the Silverblue base.
+- Brave's official RPM repository (its signing key fingerprint is pinned in
+  `manifests/vendor-repositories.conf`).
 - Ghostty COPR `scottames/ghostty`.
 - Tailscale's official Fedora repository.
 
@@ -127,12 +130,16 @@ standard shell dotfiles such as `.bashrc` and `.bash_profile`. Conflicting
 managed files and conflicting Neovim config paths are backed up under
 `~/.local/state/fedora-desktop/backups/` before replacement.
 
-The first pass performs preflight and converges host packages, including
-removing the retired Docker CE layers. If rpm-ostree creates a new deployment,
+The first pass performs preflight and installs the declared host packages. If
+rpm-ostree creates a new deployment,
 the command exits with status `10`; reboot manually and run the same command
 again. The second pass installs the latest configured
 Mise CLI tools, updates clean Mise bootstrap repos, applies dotfiles, installs Flatpaks,
 creates Toolbx, and verifies the result.
+
+This repository describes a fresh desktop setup. Install phases add missing
+declared packages and applications; they do not uninstall software or migrate
+packages, application data, containers, or machine state that is not listed.
 
 The installer enables `sshd` and `tailscaled`, but does not authenticate or
 populate them. Podman is rootless and does not need a system daemon. Authenticate
@@ -152,36 +159,11 @@ projects in the shared home directory are accessible to both environments.
 and common Compose projects generally work, but validate projects that depend on
 Docker-specific or advanced BuildKit features.
 
-On an existing installation, rerun `install.sh` after pulling these changes.
-The package phase stages `podman-compose` and removes the old Docker CE, Buildx,
-and Compose host packages in the same rpm-ostree deployment where possible; then
-reboot and rerun the installer. It does not delete `/var/lib/docker`, existing
-container data, or the old `/etc/yum.repos.d/docker-ce.repo`; inspect and clean
-those up separately after confirming nothing still depends on them. On rerun,
-the Toolbx phase also removes the Docker/Moby packages previously installed
-manually in `dev`; unrelated Toolbox packages and Podman container state are
-left alone.
-
-On a host that already layered the old desktop browser and FreeRDP packages,
-remove those host layers manually before or after applying this manifest:
-
-```sh
-sudo rpm-ostree uninstall zen-browser brave-origin freerdp
-sudo reboot
-```
-
-On an existing host, migrate Neovim from its old RPM layer to Mise and retain
-the native build tools with:
-
-```sh
-sudo rpm-ostree uninstall --allow-inactive \
-  --install=gcc --install=make --install=wl-clipboard neovim
-sudo reboot
-```
-
-Existing repository files are not removed automatically. Inspect them and
-remove old Zen, Brave, or Docker repository files separately once no installed
-package needs them.
+Spotifast is pinned by version and SHA-256 in `manifests/flatpaks.txt`. To
+upgrade it, select a publisher release, verify its published checksum, and
+update both the bundle URL and checksum in that manifest. The laptop has no
+profile in this repository and is intentionally unaffected by these desktop
+requirements.
 
 ## Dotfiles and Profile
 

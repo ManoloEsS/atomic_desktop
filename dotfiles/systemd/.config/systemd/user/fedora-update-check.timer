@@ -1,8 +1,8 @@
 [Unit]
-Description=Daily notify-only update check for the Atomic desktop
+Description=Weekly notify-only update check for the Atomic desktop
 
 [Timer]
-OnCalendar=daily
+OnCalendar=weekly
 RandomizedDelaySec=1h
 Persistent=true
 

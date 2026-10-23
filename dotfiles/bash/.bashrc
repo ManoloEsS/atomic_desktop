@@ -8,6 +8,7 @@ export SYSTEMD_EDITOR="${EDITOR}"
 export BAT_THEME="ansi"
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+export PATH="/usr/bin:$PATH"
 
 # Mise shims and ~/.local/bin come first so rolling user tools shadow the
 # system defaults (mise activate also prepends when it runs below).
