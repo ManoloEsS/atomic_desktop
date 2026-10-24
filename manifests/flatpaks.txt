@@ -1,3 +1,3 @@
-# app-id|source|bundle URL|published SHA-256
-com.freerdp.FreeRDP|flathub||
-rocks.spotifast.Spotifast|bundle|https://github.com/crmne/spotifast/releases/download/v0.14.1/spotifast-v0.14.1-x86_64.flatpak|f24f7da98ed0052e5f9aa1ce67e1ca0f717a77c759479a9394706b5fc50a55a8
+# app-id|source|bundle URL|version|published SHA-256
+com.freerdp.FreeRDP|flathub|||
+rocks.spotifast.Spotifast|bundle|https://github.com/crmne/spotifast/releases/download/v0.14.1/spotifast-v0.14.1-x86_64.flatpak|0.14.1|f24f7da98ed0052e5f9aa1ce67e1ca0f717a77c759479a9394706b5fc50a55a8

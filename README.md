@@ -17,7 +17,8 @@ The desktop profile defines the desired setup for a new system:
   desktop-specific output widgets.
 - Ghostty, Brave Origin, FreeRDP, Spotifast, and the existing shell workflow.
   Brave Origin is the host RPM and default browser; FreeRDP is a system
-  Flatpak. Spotifast is a system Flatpak from its publisher's release bundle.
+  Flatpak. Firefox remains available from the Silverblue base image. Spotifast
+  is a system Flatpak from its publisher's release bundle.
 - Rootless Podman with Compose, OpenSSH server, Tailscale, firewalld,
   tuned-ppd, and fstrim.
 - Mise-managed CLI tools, Yazi, Herdr, tmux, and the Toolbx development
@@ -30,7 +31,7 @@ not part of this profile.
 
 ```text
 Silverblue base image (assumed)
-  GNOME/GDM, git, openssh client, toolbox, podman, flatpak, fontconfig,
+  GNOME/GDM, Firefox, git, openssh client, toolbox, podman, flatpak, fontconfig,
   portals, PipeWire, NetworkManager, Nautilus, polkit, firewalld.
 
 Host packages and services
@@ -41,17 +42,18 @@ Host packages and services
 User-local Mise
   latest Herdr, Yazi, tmux, fzf, bat, eza, zoxide, gh, jj, OpenCode, Neovim,
   ripgrep, Tree-sitter CLI, Starship, Node (npm for Mason), lazygit,
-  prettierd, and fd. Node exists globally so Mason can install its
+  prettierd, fd, Go, lazydocker, and podman-tui. Node exists globally so Mason can install its
   npm-based packages; lazygit backs `<leader>gg`, prettierd backs conform
-  for JS/TS, and fd backs Snacks explorer and Telescope. Language runtimes
-  (Go, Rust, Python versions) stay per-project. Dotfiles are applied through
+  for JS/TS, and fd backs Snacks explorer and Telescope. Go is global; other
+  project language runtimes (such as Rust and Python versions) stay per-project.
+  Dotfiles are applied through
   Mise native dotfiles. Neovim's configuration is kept in the independent kickstart.nvim
   repository and
   follows its `master` branch.
 
 Toolbx
   dev with the minimal native packages from
-  manifests/toolbox-packages.txt (gcc, make, wl-clipboard; git and
+  manifests/toolbox-packages.txt (gcc, make, wl-clipboard, mpg123; git and
   openssh-clients are already in the fedora-toolbox base image). In interactive
   `dev` shells, the `podman` alias forwards to the host with
   `flatpak-spawn --host podman`; host rootless Podman and its Compose provider
@@ -74,16 +76,6 @@ Toolbx. Its configuration repository is cloned to
 phase runs `mise bootstrap repos apply/update --skip-dirty` before applying
 links. Dirty checkouts are preserved and skipped; commit or otherwise reconcile
 local changes, then rerun the dotfiles phase to fetch the current `master` tip.
-When migrating an older checkout whose Git history diverged under the previous
-updater, preserve it under a backup name so Mise can clone a clean checkout at
-the configured path:
-
-```sh
-mv ~/.local/share/fedora-desktop/sources/nvim \
-  ~/.local/share/fedora-desktop/sources/nvim.backup.$(date -u +%Y%m%dT%H%M%SZ)
-bash scripts/install-dotfiles.sh --profile desktop
-```
-
 ## Repositories
 
 Only repositories needed by the declared host layers are configured:
@@ -151,6 +143,10 @@ sudo tailscale up --ssh
 gh auth login
 ```
 
+The system-configuration phase also permanently allows SSH in firewalld's
+default zone. This intentionally supports LAN SSH as well as Tailscale SSH;
+hosts on networks assigned to that zone can reach the SSH service.
+
 Podman starts with no migrated containers, images, or volumes. No Docker daemon,
 Docker group, socket forwarding, or Docker repository is configured. The
 interactive `podman` alias in `dev` invokes the host's Podman as the same user;
@@ -160,10 +156,14 @@ and common Compose projects generally work, but validate projects that depend on
 Docker-specific or advanced BuildKit features.
 
 Spotifast is pinned by version and SHA-256 in `manifests/flatpaks.txt`. To
-upgrade it, select a publisher release, verify its published checksum, and
-update both the bundle URL and checksum in that manifest. The laptop has no
-profile in this repository and is intentionally unaffected by these desktop
-requirements.
+upgrade it, select a publisher release, verify its published checksum, update
+the URL, version, and checksum together, then rerun
+`bash scripts/install-flatpak.sh --profile desktop`. The installer downloads
+and verifies the bundle only when the installed version differs from the
+manifest. Because Spotifast is distributed as a bundle and Flathub support is
+planned, it is not updated by the regular `flatpak update` command. The laptop
+has no profile in this repository and is intentionally unaffected by these
+desktop requirements.
 
 ## Dotfiles and Profile
 
@@ -176,8 +176,9 @@ mise bootstrap dotfiles diff
 mise bootstrap dotfiles apply --dry-run
 ```
 
-Global Mise tools are intentionally rolling. Project language runtimes are not
-installed by this desktop profile; declare them in each project instead:
+Global Mise tools are intentionally rolling. Go is installed globally; other
+language runtimes are project-managed. A project can pin its own Go version or
+declare a runtime such as Python:
 
 ```sh
 cd /path/to/project
@@ -216,7 +217,8 @@ see
 
 ## Updates
 
-There is no GNOME Software here, so updates are explicit and notify-only.
+This setup uses explicit, notify-only update commands rather than GNOME
+Software. The GNOME Software application may still be present in the base image.
 Two streams are covered; everything else stays manual:
 
 - OS deployment (`rpm-ostree`, base plus host layers).

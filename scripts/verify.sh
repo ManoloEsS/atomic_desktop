@@ -271,9 +271,17 @@ else
 fi
 
 if command -v flatpak >/dev/null 2>&1; then
-  while IFS='|' read -r app source url checksum; do
+  while IFS='|' read -r app source url version checksum; do
     if flatpak info --system "$app" >/dev/null 2>&1; then
       pass "Flatpak installed: $app"
+      if [[ $source == bundle ]]; then
+        installed_version=$(flatpak info --system --show-version "$app" 2>/dev/null || true)
+        if [[ $installed_version == "$version" ]]; then
+          pass "Flatpak version matches manifest: $app $version"
+        else
+          fail "Flatpak version mismatch for $app (expected $version, got ${installed_version:-unknown})"
+        fi
+      fi
     else
       fail "Flatpak missing: $app"
     fi

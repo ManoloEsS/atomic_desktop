@@ -41,29 +41,40 @@ install_bundle() {
   trap 'rm -f -- "$bundle_file"' RETURN
   curl --fail --silent --show-error --location "$url" --output "$bundle_file"
   printf '%s  %s\n' "$checksum" "$bundle_file" | sha256sum --check -
-  run_root flatpak install --system -y "$bundle_file"
+  run_root flatpak install --system --or-update -y "$bundle_file"
   rm -f -- "$bundle_file"
   trap - RETURN
 }
 
 for entry in "${apps[@]}"; do
-  IFS='|' read -r app source url checksum <<< "$entry"
+  IFS='|' read -r app source url version checksum <<< "$entry"
   case $source in
     flathub)
-      [[ -z $url && -z $checksum ]] || die "Flathub entry must not specify a bundle URL or checksum: $app"
+      [[ -z $url && -z $version && -z $checksum ]] \
+        || die "Flathub entry must not specify bundle metadata: $app"
       ;;
     bundle)
-      [[ $url == https://* && $checksum =~ ^[[:xdigit:]]{64}$ ]] \
-        || die "invalid bundle URL or SHA-256 for $app in flatpaks.txt"
+      [[ $url == https://* && -n $version && $checksum =~ ^[[:xdigit:]]{64}$ ]] \
+        || die "invalid bundle URL, version, or SHA-256 for $app in flatpaks.txt"
       ;;
     *)
       die "unsupported Flatpak source '$source' for $app in flatpaks.txt"
       ;;
   esac
 
+  installed_version=
   if flatpak info --system "$app" >/dev/null 2>&1; then
-    info "Flatpak already installed: $app"
-    continue
+    if [[ $source == bundle ]]; then
+      installed_version=$(flatpak info --system --show-version "$app" 2>/dev/null || true)
+      if [[ $installed_version == "$version" ]]; then
+        info "Flatpak already at declared version: $app $version"
+        continue
+      fi
+      info "Updating $app from ${installed_version:-unknown} to $version"
+    else
+      info "Flatpak already installed: $app"
+      continue
+    fi
   fi
 
   case $source in
@@ -72,7 +83,7 @@ for entry in "${apps[@]}"; do
       ;;
     bundle)
       if is_dry_run; then
-        info "Would download and verify Flatpak bundle for $app from $url"
+        info "Would download and verify Flatpak bundle for $app $version from $url"
       else
         install_bundle "$url" "$checksum"
       fi
