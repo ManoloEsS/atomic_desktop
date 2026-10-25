@@ -36,7 +36,7 @@ input {
     }
 
     // Uncomment this to make the mouse warp to the center of newly focused windows.
-    warp-mouse-to-focus
+    // warp-mouse-to-focus
 
     // Focus windows and outputs automatically when moving the mouse into them.
     // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
@@ -46,6 +46,7 @@ input {
 layout {
     gaps 6
     center-focused-column "never"
+    always-center-single-column
 
     default-column-width { proportion 0.5; }
     preset-column-widths {
@@ -82,11 +83,6 @@ hotkey-overlay {
 }
 
 prefer-no-csd
-
-debug {
-    // Allow Noctalia notification actions and window activation requests.
-    honor-xdg-activation-with-invalid-serial
-}
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
@@ -155,6 +151,7 @@ binds {
     // Lock with noctalia
     Mod+Space hotkey-overlay-title="Open launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
     Mod+Escape hotkey-overlay-title="Open session options" { spawn-sh "noctalia msg panel-toggle session"; }
+    Mod+Shift+Escape allow-inhibiting=false hotkey-overlay-title="Toggle keyboard shortcuts inhibition" { toggle-keyboard-shortcuts-inhibit; }
     Alt+Tab hotkey-overlay-title="Switch windows" { spawn-sh "noctalia msg window-switcher"; }
 
     // Focus and move windows in Niri's scrolling-column model.
@@ -238,11 +235,11 @@ binds {
     Mod+R { switch-preset-column-width; }
     Mod+Shift+R { switch-preset-column-width-back; }
 
-    Mod+Shift+Minus { set-column-width "-10%"; }
-    Mod+Shift+Equal { set-column-width "+10%"; }
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
 
-    Mod+Minus { set-window-height "-10%"; }
-    Mod+Equal { set-window-height "+10%"; }
+    Mod+Shift+Minus { set-window-height "-10%"; }
+    Mod+Shift+Equal { set-window-height "+10%"; }
 
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
@@ -257,11 +254,11 @@ binds {
 
     Mod+W { toggle-column-tabbed-display; }
 
-    Mod+Comma { consume-or-expel-window-left; }
-    Mod+Period { consume-or-expel-window-right; }
+    Mod+BracketLeft { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
 
-    Mod+BracketLeft { consume-window-into-column; }
-    Mod+BracketRight { expel-window-from-column; }
+    Mod+Comma { consume-window-into-column; }
+    Mod+Period { expel-window-from-column; }
 
     Mod+O { toggle-overview; }
 
