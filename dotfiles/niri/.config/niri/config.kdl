@@ -45,8 +45,8 @@ input {
 
 layout {
     gaps 6
-    center-focused-column "never"
     always-center-single-column
+    center-focused-column "never"
 
     default-column-width { proportion 0.5; }
     preset-column-widths {

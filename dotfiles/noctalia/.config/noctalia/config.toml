@@ -21,7 +21,7 @@ order = [ "default" ]
         accordion = false
         accordion_direction = "end"
         enabled = true
-        fill = "surface_variant"
+        fill = "surface_container"
         id = "g1"
         members = [ "date", "clock" ]
         opacity = 0.0
@@ -63,7 +63,7 @@ fingerprint = false
 [lockscreen_widgets]
 enabled = true
 schema_version = 2
-widget_order = [ "lockscreen-login-box@HDMI-A-1", "lockscreen-login-box@DP-1" ]
+widget_order = [ "lockscreen-login-box@HDMI-A-1", "lockscreen-login-box@DP-1", "lockscreen-login-box@DP-12", "lockscreen-login-box@DP-15" ]
 
     [lockscreen_widgets.grid]
     cell_size = 16
@@ -96,6 +96,61 @@ widget_order = [ "lockscreen-login-box@HDMI-A-1", "lockscreen-login-box@DP-1" ]
         show_session_buttons = false
         show_unlock_hint = false
         show_weather = false
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-12"]
+    box_height = 70.0
+    box_width = 240.0
+    cx = 1720.0
+    cy = 720.0
+    output = "DP-12"
+    placement_height = 1440.0
+    placement_width = 3440.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-12".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.0
+        background_radius = 0.0
+        center_password_text = true
+        input_opacity = 1.0
+        input_radius = 0.0
+        layout = "compact"
+        show_caps_lock = true
+        show_keyboard_layout = false
+        show_login_button = false
+        show_media = false
+        show_session_buttons = false
+        show_unlock_hint = false
+        show_weather = false
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-15"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 609.0
+    cy = 352.0
+    enabled = false
+    output = "DP-15"
+    placement_height = 1920.0
+    placement_width = 1080.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-15".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
 
     [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
     box_height = 196.0
